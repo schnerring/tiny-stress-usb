@@ -50,6 +50,15 @@ if [ -z "$1" ]; then
   exit 2
 fi
 
+# Check required software packages
+readonly DEPENDENCIES="grub-install md5sum mksquashfs wget"
+for dependency in ${DEPENDENCIES}; do
+  if ! command -v "${dependency}" > /dev/null 2>&1; then
+    printf 'Command not found: %s\n' "${dependency}" >&2
+    exit 2
+  fi
+done
+
 ################################################################################
 # CONSTANTS
 ################################################################################
