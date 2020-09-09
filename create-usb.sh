@@ -70,6 +70,12 @@ for dependency in ${DEPENDENCIES}; do
   fi
 done
 
+# Check if running as root
+if [ "$(id -u)" -ne 0 ]; then
+  printf 'Must run as root\n' >&2
+  exit 2
+fi
+
 ################################################################################
 # CONSTANTS
 ################################################################################
