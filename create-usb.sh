@@ -24,20 +24,31 @@ EXAMPLES
 
     $(basename "$0") -l ~/logs sdc"
 
+########################################
+# Display help text.
+# Arguments:
+#   None
+# Outputs:
+#   Write help text to stdout.
+########################################
+display_help() {
+  printf '%s\n' "${USAGE}"
+}
+
 # parse options
 while getopts ':hl:' option; do
   case "${option}" in
-    h)  echo "${USAGE}"
+    h)  display_help
         exit
         ;;
     l)  LOG_DIR="${OPTARG}"
         ;;
-    :)  printf 'Missing argument for -%s\n\n' "${OPTARG}" >&2
-        printf '%s\n' "${USAGE}" >&2
+    :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
+        display_help >&2
         exit 2
         ;;
    \?)  printf 'Illegal option: -%s\n\n' "${OPTARG}" >&2
-        printf '%s\n' "${USAGE}\n" >&2
+        display_help >&2
         exit 2
         ;;
   esac
@@ -46,7 +57,7 @@ shift $(( OPTIND - 1 ))
 
 if [ -z "$1" ]; then
   printf 'Missing option: <drive>\n\n' >&2
-  printf '%s\n' "${USAGE}" >&2
+  display_help >&2
   exit 2
 fi
 
