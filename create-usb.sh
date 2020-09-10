@@ -64,7 +64,7 @@ if [ -z "$1" ]; then
 fi
 
 # Check required software packages
-readonly DEPENDENCIES="grub-install lsblk md5sum mksquashfs wget"
+readonly DEPENDENCIES="grub-install lsblk md5sum mksquashfs tee wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -89,21 +89,55 @@ if ! printf '%s' "${DEVICE}" | grep "/dev/\w*" > /dev/null 2>&1; then
 fi
 readonly DEVICE
 
+# check if USB device
 readonly BUS_CONNECTION="$(lsblk --nodeps --noheadings --output TRAN "${DEVICE}")"
 if [ "${BUS_CONNECTION}" != "usb" ]; then
   printf 'Not a USB device: %s\n' "${DEVICE}" >&2
   exit 2
 fi
 
+# common directories
 readonly WORKING_DIR="$(pwd)"
 readonly TEMP_DIR="${WORKING_DIR}/temp"
 readonly DOWNLOAD_DIR="${TEMP_DIR}/downloads"
 
+# logging
+readonly LOG_SEPARATOR="--------------------------------------------------------------------------------"
 [ -z "${LOG_DIR}" ] && LOG_DIR="${WORKING_DIR}"
+readonly LOG_FILE="${LOG_DIR}/log.txt"
 
 ################################################################################
 # FUNCTIONS
 ################################################################################
+
+##################################################
+# Log informational message.
+# Globals:
+#   LOG_FILE
+# Arguments:
+#   Message to log.
+# Outputs:
+#   Write message to stdout and log file.
+##################################################
+log_info()
+{
+  now="$(date +"%F %T")"
+  printf "%s\n" "[${now}] $1" | tee -a "${LOG_FILE}"
+}
+
+##################################################
+# Log emphasized header message.
+# Globals:
+#   LOG_SEPARATOR
+# Arguments:
+#   Message to log.
+##################################################
+log_header()
+{
+  log_info "${LOG_SEPARATOR}"
+  log_info "  $1"
+  log_info "${LOG_SEPARATOR}"
+}
 
 ########################################
 # Unmount all partitions of device.

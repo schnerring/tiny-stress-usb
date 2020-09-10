@@ -23,4 +23,5 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `lsblk` to check if USB device
   * `md5sum` to validate downloads
   * `mksquashfs` to package custom Tiny Core extensions
+  * `tee` for file logging
   * `wget` to download software
