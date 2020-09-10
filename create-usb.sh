@@ -63,8 +63,8 @@ if [ -z "$1" ]; then
   exit 2
 fi
 
-# Check required software packages
-readonly DEPENDENCIES="grub-install lsblk md5sum mksquashfs tee wget"
+# check required software packages
+readonly DEPENDENCIES="grep grub-install lsblk md5sum mksquashfs tee wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -72,7 +72,7 @@ for dependency in ${DEPENDENCIES}; do
   fi
 done
 
-# Check if running as root
+# check if running as root
 if [ "$(id -u)" -ne 0 ]; then
   printf 'Must run as root\n' >&2
   exit 2
@@ -144,10 +144,39 @@ log_header()
 # The OS might auto-mount partitions in between steps which is why this function
 # is called repeatedly throughout the script.
 # Globals:
-#   DRIVE
+#   DEVICE
 # Arguments:
 #   None
 ########################################
 unmount_all_partitions() {
   umount --quiet "${DEVICE}"
 }
+
+########################################
+# Prompts for user confirmation.
+# Globals:
+#   DEVICE
+# Arguments:
+#   None
+########################################
+confirmation_prompt() {
+  printf 'ALL DATA ON %s WILL BE LOST!\n' "${DEVICE}"
+  printf 'Really continue? (y/n) '
+  read -r
+
+  if ! printf '%s' "${REPLY}" | grep "^[Yy]$" > /dev/null 2>&1; then
+    exit
+  fi
+}
+
+##################################################
+# Main function of script.
+# Arguments:
+#   None
+##################################################
+main() {
+  confirmation_prompt
+}
+
+# entrypoint
+main
