@@ -15,6 +15,7 @@ DESCRIPTION
 OPTIONS
     -h                show help text
     -l <directory>    write log files to <directory> (default: $(pwd))
+    -y                automatic \"yes\" to prompts
     <device>          USB device to use (/dev/ may be omitted)
 
 EXAMPLES
@@ -38,12 +39,14 @@ display_help() {
 }
 
 # parse options
-while getopts ':hl:' option; do
+while getopts ':hl:y' option; do
   case "${option}" in
     h)  display_help
         exit
         ;;
     l)  LOG_DIR="${OPTARG}"
+        ;;
+    y)  readonly AUTO_CONFIRM_PROMPTS=true
         ;;
     :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
         display_help >&2
@@ -155,11 +158,16 @@ unmount_all_partitions() {
 ########################################
 # Prompts for user confirmation.
 # Globals:
+#   AUTO_CONFIRM_PROMPTS
 #   DEVICE
 # Arguments:
 #   None
 ########################################
 confirmation_prompt() {
+  if [ "${AUTO_CONFIRM_PROMPTS}" = true ]; then
+    return
+  fi
+
   printf 'ALL DATA ON %s WILL BE LOST!\n' "${DEVICE}"
   printf 'Really continue? (y/n) '
   read -r
