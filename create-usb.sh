@@ -4,18 +4,18 @@ readonly USAGE=\
     $(basename "$0") -- create tiny, bootable stress test USB
 
 SYNOPSIS
-    $(basename "$0") [-h] [-l <directory>] <drive>
+    $(basename "$0") [-h] [-l <directory>] <device>
 
 DESCRIPTION
     Tool to create a bootable USB device, including a minimal Tiny Core Linux
     installation and various stress testing tools.
 
-    ALL DATA ON <drive> WILL BE LOST!
+    ALL DATA ON <device> WILL BE LOST!
 
 OPTIONS
     -h                show help text
     -l <directory>    write log files to <directory> (default: $(pwd))
-    <drive>           USB drive to use (/dev/ may be omitted)
+    <device>          USB device to use (/dev/ may be omitted)
 
 EXAMPLES
     $(basename "$0") sda
@@ -26,6 +26,8 @@ EXAMPLES
 
 ########################################
 # Display help text.
+# Globals:
+#   USAGE
 # Arguments:
 #   None
 # Outputs:
@@ -56,7 +58,7 @@ done
 shift $(( OPTIND - 1 ))
 
 if [ -z "$1" ]; then
-  printf 'Missing option: <drive>\n\n' >&2
+  printf 'Missing option: <device>\n\n' >&2
   display_help >&2
   exit 2
 fi
@@ -80,11 +82,32 @@ fi
 # CONSTANTS
 ################################################################################
 
-DRIVE="$1"
+DEVICE="$1"
 # prepend /dev/ if necessary
-if ! printf '%s' "${DRIVE}" | grep "/dev/\w*" > /dev/null 2>&1; then
-  DRIVE="/dev/${DRIVE}"
+if ! printf '%s' "${DEVICE}" | grep "/dev/\w*" > /dev/null 2>&1; then
+  DEVICE="/dev/${DEVICE}"
 fi
-readonly DRIVE
+readonly DEVICE
 
-[ -z "${LOG_DIR}" ] && LOG_DIR="$(pwd)"
+readonly WORKING_DIR="$(pwd)"
+readonly TEMP_DIR="${WORKING_DIR}/temp"
+readonly DOWNLOAD_DIR="${TEMP_DIR}/downloads"
+
+[ -z "${LOG_DIR}" ] && LOG_DIR="${WORKING_DIR}"
+
+################################################################################
+# FUNCTIONS
+################################################################################
+
+########################################
+# Unmount all partitions of selected device.
+# The OS might auto-mount partitions in between steps which is why this function
+# is called repeatedly throughout the script.
+# Globals:
+#   DRIVE
+# Arguments:
+#   None
+########################################
+unmount_all_partitions() {
+  umount --quiet "${DEVICE}"
+}
