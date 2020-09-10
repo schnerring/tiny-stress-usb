@@ -64,7 +64,7 @@ if [ -z "$1" ]; then
 fi
 
 # Check required software packages
-readonly DEPENDENCIES="grub-install md5sum mksquashfs wget"
+readonly DEPENDENCIES="grub-install lsblk md5sum mksquashfs wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -89,6 +89,12 @@ if ! printf '%s' "${DEVICE}" | grep "/dev/\w*" > /dev/null 2>&1; then
 fi
 readonly DEVICE
 
+readonly BUS_CONNECTION="$(lsblk --nodeps --noheadings --output TRAN "${DEVICE}")"
+if [ "${BUS_CONNECTION}" != "usb" ]; then
+  printf 'Not a USB device: %s\n' "${DEVICE}" >&2
+  exit 2
+fi
+
 readonly WORKING_DIR="$(pwd)"
 readonly TEMP_DIR="${WORKING_DIR}/temp"
 readonly DOWNLOAD_DIR="${TEMP_DIR}/downloads"
@@ -100,7 +106,7 @@ readonly DOWNLOAD_DIR="${TEMP_DIR}/downloads"
 ################################################################################
 
 ########################################
-# Unmount all partitions of selected device.
+# Unmount all partitions of device.
 # The OS might auto-mount partitions in between steps which is why this function
 # is called repeatedly throughout the script.
 # Globals:

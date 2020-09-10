@@ -20,6 +20,7 @@ Most inspiring were the following resources, found in the iXsystems Community's 
 * Must be run as `root`
 * Required software packages:
   * `grub-install` to install GRUB
+  * `lsblk` to check if USB device
   * `md5sum` to validate downloads
   * `mksquashfs` to package custom Tiny Core extensions
   * `wget` to download software
