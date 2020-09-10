@@ -178,6 +178,18 @@ unmount_partitions() {
 }
 
 ########################################
+# Inform OS about device's partition table changes.
+# Globals:
+#   DEVICE
+# Arguments:
+#   None
+########################################
+read_partition_table() {
+  unmount_partitions
+  partprobe "${DEVICE}"
+}
+
+########################################
 # Wipe all device partitions.
 # Globals:
 #   DEVICE
@@ -186,9 +198,23 @@ unmount_partitions() {
 ########################################
 wipe_partitions() {
   unmount_partitions
-  log_header "Wiping partitions ..."
+
+  log_header "Wiping partitions"
   sgdisk --zap-all "${DEVICE}"
-  partprobe "${DEVICE}" # re-read partition table
+
+  read_partition_table
+}
+
+create_partitions() {
+  log_header "Creating partitions"
+
+  log_info "Creating EFI partition (100 MiB)"
+  sgdisk --new 1:0:+100M --typecode 1:ef00 "${DEVICE}"
+
+  log_info "Creating target partition (100%FREE)"
+  sgdisk --new 2:0:0 "${DEVICE}"
+
+  read_partition_table
 }
 
 ##################################################
@@ -199,6 +225,7 @@ wipe_partitions() {
 main() {
   confirmation_prompt
   wipe_partitions
+  create_partitions
 }
 
 # entrypoint
