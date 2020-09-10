@@ -67,7 +67,7 @@ if [ -z "$1" ]; then
 fi
 
 # check required software packages
-readonly DEPENDENCIES="grep grub-install lsblk md5sum mksquashfs tee wget"
+readonly DEPENDENCIES="grep grub-install lsblk md5sum mksquashfs partprobe tee wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -143,19 +143,6 @@ log_header()
 }
 
 ########################################
-# Unmount all partitions of device.
-# The OS might auto-mount partitions in between steps which is why this function
-# is called repeatedly throughout the script.
-# Globals:
-#   DEVICE
-# Arguments:
-#   None
-########################################
-unmount_all_partitions() {
-  umount --quiet "${DEVICE}"
-}
-
-########################################
 # Prompts for user confirmation.
 # Globals:
 #   AUTO_CONFIRM_PROMPTS
@@ -177,6 +164,33 @@ confirmation_prompt() {
   fi
 }
 
+########################################
+# Unmount all device partitions.
+# The OS might auto-mount partitions in between steps which is why this function
+# is called repeatedly throughout the script.
+# Globals:
+#   DEVICE
+# Arguments:
+#   None
+########################################
+unmount_partitions() {
+  umount --quiet "${DEVICE}"?*
+}
+
+########################################
+# Wipe all device partitions.
+# Globals:
+#   DEVICE
+# Arguments:
+#   None
+########################################
+wipe_partitions() {
+  unmount_partitions
+  log_header "Wiping partitions ..."
+  sgdisk --zap-all "${DEVICE}"
+  partprobe "${DEVICE}" # re-read partition table
+}
+
 ##################################################
 # Main function of script.
 # Arguments:
@@ -184,6 +198,7 @@ confirmation_prompt() {
 ##################################################
 main() {
   confirmation_prompt
+  wipe_partitions
 }
 
 # entrypoint
