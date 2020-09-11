@@ -67,7 +67,7 @@ if [ -z "$1" ]; then
 fi
 
 # check required software packages
-readonly DEPENDENCIES="grep grub-install lsblk md5sum mksquashfs partprobe tee wget"
+readonly DEPENDENCIES="grep grub-install lsblk md5sum mkfs.fat mkfs.ext2 mksquashfs partprobe tee wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -105,7 +105,7 @@ readonly TEMP_DIR="${WORKING_DIR}/temp"
 readonly DOWNLOAD_DIR="${TEMP_DIR}/downloads"
 
 # logging
-readonly LOG_SEPARATOR="--------------------------------------------------------------------------------"
+readonly LOG_SEPARATOR="+-------------------------------------------------------------------------------"
 [ -z "${LOG_DIR}" ] && LOG_DIR="${WORKING_DIR}"
 readonly LOG_FILE="${LOG_DIR}/log.txt"
 
@@ -138,7 +138,7 @@ log_info()
 log_header()
 {
   log_info "${LOG_SEPARATOR}"
-  log_info "  $1"
+  log_info "+ $1"
   log_info "${LOG_SEPARATOR}"
 }
 
@@ -174,7 +174,9 @@ confirmation_prompt() {
 #   None
 ########################################
 unmount_partitions() {
+  sleep 1
   umount --quiet "${DEVICE}"?*
+  sleep 1
 }
 
 ########################################
@@ -197,16 +199,24 @@ read_partition_table() {
 #   None
 ########################################
 wipe_partitions() {
-  unmount_partitions
-
   log_header "Wiping partitions"
+  unmount_partitions
   sgdisk --zap-all "${DEVICE}"
-
   read_partition_table
+  log_info "Done"
 }
 
+########################################
+# Creates EFI and target partitions.
+# Globals:
+#   DEVICE
+# Arguments:
+#   None
+########################################
 create_partitions() {
   log_header "Creating partitions"
+
+  #unmount_partitions
 
   log_info "Creating EFI partition (100 MiB)"
   sgdisk --new 1:0:+100M --typecode 1:ef00 "${DEVICE}"
@@ -215,6 +225,30 @@ create_partitions() {
   sgdisk --new 2:0:0 "${DEVICE}"
 
   read_partition_table
+
+  log_info "Done"
+}
+
+########################################
+# Creates file systems.
+# Globals:
+#   EFI_PARTITION
+#   TARGET_PARTITION
+# Arguments:
+#   None
+########################################
+create_file_systems() {
+  log_header "Creating file systems"
+
+  unmount_partitions
+
+  log_info "Creating FAT32 file system on EFI partition"
+  mkfs.fat -F 32 "${DEVICE}1"
+
+  log_info "Creating ext2 file system on target partition"
+  mkfs.ext2 -F "${DEVICE}2"
+
+  log_info "Done"
 }
 
 ##################################################
@@ -226,6 +260,7 @@ main() {
   confirmation_prompt
   wipe_partitions
   create_partitions
+  create_file_systems
 }
 
 # entrypoint

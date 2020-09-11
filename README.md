@@ -23,6 +23,8 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `grub-install` to install GRUB
   * `lsblk` to check if USB device
   * `md5sum` to validate downloads
+  * `mkfs.ext2` to create ext2 file system
+  * `mkfs.fat` to create FAT32 file system
   * `mksquashfs` to package custom Tiny Core extensions
   * `partprobe` to re-read partition table
   * `sgdisk` for partitioning
