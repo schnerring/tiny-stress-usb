@@ -270,9 +270,8 @@ ensure_directories() {
 #   None
 ########################################
 delete_temporary_directory() {
-  log_header "Deleting Temporary Directory"
+  log_info "Deleting Temporary Directory"
   rm -rf "${TMP_DIR}"
-  log_info "Done"
 }
 
 ########################################
@@ -285,6 +284,7 @@ delete_temporary_directory() {
 #   None
 ########################################
 unmount_partitions() {
+  log_info "Unmounting partitions"
   sleep 1
   umount --quiet "${DEVICE}"?*
   sleep 1
@@ -310,8 +310,8 @@ read_partition_table() {
 #   None
 ########################################
 wipe_partitions() {
-  unmount_partitions
   log_header "Wiping Partitions"
+  read_partition_table
   sgdisk --zap-all "${DEVICE}"
   log_info "Done"
   read_partition_table
@@ -325,8 +325,6 @@ wipe_partitions() {
 #   None
 ########################################
 create_partitions() {
-  #unmount_partitions
-
   log_header "Creating EFI Partition (100 MiB)"
   sgdisk --new 1:0:+100M --typecode 1:ef00 "${DEVICE}"
   log_info "Done"
@@ -347,8 +345,6 @@ create_partitions() {
 #   None
 ########################################
 create_file_systems() {
-  unmount_partitions
-
   log_header "Creating FAT32 File System On EFI Partition"
   mkfs.fat -F 32 "${PART_EFI}"
   log_info "Done"
@@ -356,6 +352,8 @@ create_file_systems() {
   log_header "Creating ext2 File System On Root Partition"
   mkfs.ext2 -F "${PART_ROOT}"
   log_info "Done"
+
+  unmount_partitions
 }
 
 ########################################
@@ -369,13 +367,9 @@ create_file_systems() {
 #   None
 ########################################
 mount_file_systems() {
-  unmount_partitions
-
   log_header "Mounting File Systems"
-
   mount "${PART_EFI}" "${MNT_EFI}"
   mount "${PART_ROOT}" "${MNT_ROOT}"
-
   log_info "Done"
 }
 
@@ -445,6 +439,63 @@ download_tiny_core() {
 }
 
 ########################################
+# Download Tiny Core Linux extension.
+# Globals:
+#   DOWNLOAD_DIR
+#   TC_SITE_URL
+# Arguments:
+#   Name of the extension, including the .tcz extension.
+########################################
+already_downloaded=""
+download_tiny_core_extension() {
+  [ -z "$1" ] && return 1
+
+  mkdir -p -- "${DOWNLOAD_DIR}/tce/optional"
+
+  log_info "Downloading: $1"
+
+  if printf '%s' "${already_downloaded}" | grep "$1" > /dev/null 2>&1; then
+    log_info "Already downloaded: $1. Skipping."
+    return
+  fi
+
+  download_and_validate_tiny_core_component \
+    "${TC_SITE_URL}/tcz/$1" \
+    "${DOWNLOAD_DIR}/tce/optional/$1"
+
+  download_file \
+    "${TC_SITE_URL}/tcz/$1.dep" \
+    "${DOWNLOAD_DIR}/tce/optional/$1.dep"
+
+  already_downloaded="${already_downloaded} $1"
+
+  if [ -f "${DOWNLOAD_DIR}/tce/optional/$1.dep" ]; then
+    # download dependencies recursively
+    while read -r dependency; do
+      download_tiny_core_extension "${dependency}"
+    done < "${DOWNLOAD_DIR}/tce/optional/$1.dep"
+  fi
+
+  printf '%s\n' "$1" >> "${DOWNLOAD_DIR}/tce/onboot.lst"
+}
+
+########################################
+# Download Tiny Core Linux extensions.
+# Globals:
+#   DOWNLOAD_DIR
+#   TC_EXTENSIONS
+# Arguments:
+#   None
+########################################
+download_tiny_core_extensions() {
+  rm -f -- "${DOWNLOAD_DIR}/tce/onboot.lst"
+  for extension in ${TC_EXTENSIONS}; do
+    log_header "Downloading: ${extension}"
+    download_tiny_core_extension "${extension}.tcz"
+  done
+}
+
+########################################
 # Install downloaded Tiny Core Linux on root partition.
 # Globals:
 #   DOWNLOAD_DIR
@@ -455,6 +506,7 @@ download_tiny_core() {
 install_tiny_core() {
   log_header "Installing Tiny Core Linux"
   cp --recursive -- "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
+  cp --recursive -- "${DOWNLOAD_DIR}/tce" "${MNT_ROOT}"
   log_info "Done"
 }
 
@@ -486,72 +538,13 @@ install_grub() {
 }
 
 ########################################
-# Download Tiny Core Linux extension.
-# Globals:
-#   DOWNLOAD_DIR
-#   TC_SITE_URL
-# Arguments:
-#   Name of the extension, including the .tcz extension.
-########################################
-already_downloaded=""
-download_tiny_core_extension() {
-  [ -z "$1" ] && return 1
-
-  mkdir -p -- "${DOWNLOAD_DIR}/tce/optional"
-
-  log_info "Downloading: $1"
-
-  if printf '%s' "${already_downloaded}" | grep "$1" > /dev/null 2>&1; then
-    log_info "Already downloaded: $1. Skipping."
-    return
-  fi
-
-  download_and_validate_tiny_core_component \
-    "${TC_SITE_URL}/tcz/$1" \
-    "${DOWNLOAD_DIR}/tce/optional/$1"
-
-  download_file \
-    "${TC_SITE_URL}/tcz/$1.dep" \
-    "${DOWNLOAD_DIR}/tce/optional/$1.dep"
-
-  printf '%s\n' "$1" >> "${DOWNLOAD_DIR}/tce/onboot.lst"
-
-  already_downloaded="${already_downloaded} $1"
-
-  [ ! -f "${DOWNLOAD_DIR}/tce/optional/$1.dep" ] && return
-
-  # download dependencies recursively
-  while read -r dependency; do
-    download_tiny_core_extension "${dependency}"
-  done < "${DOWNLOAD_DIR}/tce/optional/$1.dep"
-}
-
-########################################
-# Download Tiny Core Linux extensions.
-# Globals:
-#   DOWNLOAD_DIR
-#   TC_EXTENSIONS
+# Unmount the device and delete temporary directory.
 # Arguments:
 #   None
 ########################################
-download_tiny_core_extensions() {
-  rm -f -- "${DOWNLOAD_DIR}/tce/onboot.lst"
-  for extension in ${TC_EXTENSIONS}; do
-    log_header "Downloading Tiny Core Linux extension: ${extension}"
-    download_tiny_core_extension "${extension}.tcz"
-  done
-}
-
-########################################
-# Install downloaded Tiny Core Linux extensions on root partition.
-# Globals:
-#   DOWNLOAD_DIR
-#   MNT_ROOT
-########################################
-install_tiny_core_extensions() {
-  log_header "Installing Tiny Core Linux extensions"
-  cp --recursive -- "${DOWNLOAD_DIR}/tce" "${MNT_ROOT}"
-  log_info "Done"
+teardown() {
+  unmount_partitions
+  delete_temporary_directory
 }
 
 ########################################
@@ -568,12 +561,11 @@ main() {
   create_file_systems
   mount_file_systems
   download_tiny_core
+  download_tiny_core_extensions
   install_tiny_core
   install_grub
-  download_tiny_core_extensions
-  install_tiny_core_extensions
   unmount_partitions
-  #delete_temporary_directory
+  teardown
 }
 
 # entrypoint
