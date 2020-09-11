@@ -69,6 +69,7 @@ fi
 # check required software packages
 readonly DEPENDENCIES="
 basename
+blkid
 cp
 dirname
 grep
@@ -81,6 +82,7 @@ mkfs.ext2
 mksquashfs
 mount
 partprobe
+sed
 tee
 wget"
 for dependency in ${DEPENDENCIES}; do
@@ -444,9 +446,34 @@ download_tiny_core () {
 #   MNT_ROOT
 ########################################
 install_tiny_core () {
-    log_header "Installing Tiny Core Linux"
-    cp --recursive "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
-    log_info "Done"
+  log_header "Installing Tiny Core Linux"
+  cp --recursive "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
+  log_info "Done"
+}
+
+########################################
+# Install GRUB 2 bootloader on EFI partition.
+# Globals:
+#   MNT_EFI
+#   PART_ROOT
+#   WORK_DIR
+########################################
+install_grub() {
+  log_header "Installing GRUB 2"
+
+  # TODO support legacy BIOS
+  grub-install \
+    --target=x86_64-efi \
+    --boot-directory="${MNT_EFI}/EFI/BOOT" \
+    --efi-directory="${MNT_EFI}" \
+    --removable
+
+  cp "${WORK_DIR}/grub.template.cfg" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
+
+  uuid="$(blkid --match-tag UUID --output value "${PART_ROOT}")"
+  sed -i "s/<uuid>/${uuid}/g" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
+
+  log_info "Done"
 }
 
 ########################################
@@ -464,6 +491,7 @@ main() {
   mount_file_systems
   download_tiny_core
   install_tiny_core
+  install_grub
   #unmount_partitions
   #delete_temporary_directory
 }

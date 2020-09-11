@@ -20,6 +20,7 @@ Most inspiring were the following resources, found in the iXsystems Community's 
 * Must be run as `root`
 * Required software packages:
   * `basename`
+  * `blkid` to query partition UUID
   * `cp`
   * `dirname`
   * `grep`
@@ -32,6 +33,7 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `mksquashfs` to package custom Tiny Core extensions
   * `mount` to mount partitions
   * `partprobe` to re-read partition table
+  * `sed` to search and replace in files
   * `sgdisk` for partitioning
   * `tee` for file logging
   * `wget` to download software
