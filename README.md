@@ -20,6 +20,7 @@ Most inspiring were the following resources, found in the iXsystems Community's 
 * Must be run as `root`
 * Required software packages:
   * `basename`
+  * `cp`
   * `dirname`
   * `grep`
   * `grub-install` to install GRUB

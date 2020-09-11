@@ -67,7 +67,22 @@ if [ -z "$1" ]; then
 fi
 
 # check required software packages
-readonly DEPENDENCIES="basename dirname grep grub-install lsblk md5sum mkdir mkfs.fat mkfs.ext2 mksquashfs mount partprobe tee wget"
+readonly DEPENDENCIES="
+basename
+cp
+dirname
+grep
+grub-install
+lsblk
+md5sum
+mkdir
+mkfs.fat
+mkfs.ext2
+mksquashfs
+mount
+partprobe
+tee
+wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -423,6 +438,18 @@ download_tiny_core () {
 }
 
 ########################################
+# Install Tiny Core Linux on root partition.
+# Globals:
+#   DOWNLOAD_DIR
+#   MNT_ROOT
+########################################
+install_tiny_core () {
+    log_header "Installing Tiny Core Linux"
+    cp --recursive "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
+    log_info "Done"
+}
+
+########################################
 # Main function of script.
 # Arguments:
 #   None
@@ -436,6 +463,7 @@ main() {
   create_file_systems
   mount_file_systems
   download_tiny_core
+  install_tiny_core
   #unmount_partitions
   #delete_temporary_directory
 }
