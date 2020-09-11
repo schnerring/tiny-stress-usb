@@ -108,7 +108,7 @@ fi
 
 DEVICE="$1"
 # prepend /dev/ if necessary
-if ! printf '%s' "${DEVICE}" | grep "/dev/\w*" > /dev/null 2>&1; then
+if ! printf '%s' "${DEVICE}" | grep -q "/dev/\w*"; then
   DEVICE="/dev/${DEVICE}"
 fi
 readonly DEVICE
@@ -247,7 +247,7 @@ confirmation_prompt() {
   printf 'Really continue? (y/n) '
   read -r
 
-  if ! printf '%s' "${REPLY}" | grep "^[Yy]$" > /dev/null 2>&1; then
+  if ! printf '%s' "${REPLY}" | grep -q "^[Yy]$"; then
     exit
   fi
 }
@@ -465,7 +465,7 @@ download_tiny_core_extension() {
 
   log_info "Downloading: $1"
 
-  if printf '%s' "${already_downloaded}" | grep "$1" > /dev/null 2>&1; then
+  if printf '%s' "${already_downloaded}" | grep -q "$1"; then
     log_info "Already downloaded: $1. Skipping."
     return
   fi
