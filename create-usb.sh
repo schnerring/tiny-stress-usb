@@ -13,9 +13,11 @@ DESCRIPTION
     ALL DATA ON <device> WILL BE LOST!
 
 OPTIONS
-    -h                show help text
-    -l <directory>    write log files to <directory> (default: $(pwd))
-    -y                automatic \"yes\" to prompts
+    -h                Show help text
+    -c                Clean up after the program succeeds. Delete temporary
+                      directory and unmount the device.
+    -l <directory>    Write log files to <directory> (default: $(pwd))
+    -y                Automatic \"yes\" to prompts
     <device>          USB device to use (/dev/ may be omitted)
 
 EXAMPLES
@@ -39,14 +41,16 @@ display_help() {
 }
 
 # parse options
-while getopts ':hl:y' option; do
+while getopts ':hcl:y' option; do
   case "${option}" in
     h)  display_help
         exit
         ;;
+    c)  readonly CLEAN_UP=true
+        ;;
     l)  LOG_DIR="${OPTARG}"
         ;;
-    y)  readonly AUTO_CONFIRM_PROMPTS=true
+    y)  readonly AUTO_CONFIRM=true
         ;;
     :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
         display_help >&2
@@ -190,6 +194,8 @@ log_header()
 #   TC_VERSION
 #   TC_SITE_URL
 #   TC_EXTENSIONS
+#   AUTO_CONFIRM
+#   CLEAN_UP
 # Arguments:
 #   None
 ########################################
@@ -217,18 +223,23 @@ show_runtime_info() {
   log_info "Version:        ${TC_VERSION}"
   log_info "Site URL:       ${TC_SITE_URL}"
   log_info "Extensions:     ${TC_EXTENSIONS}"
+
+  log_header "Other"
+  log_info "Auto Confirm:   ${AUTO_CONFIRM}"
+  log_info "Clean Up:       ${CLEAN_UP}"
+
 }
 
 ########################################
 # Prompts for user confirmation.
 # Globals:
-#   AUTO_CONFIRM_PROMPTS
+#   AUTO_CONFIRM
 #   DEVICE
 # Arguments:
 #   None
 ########################################
 confirmation_prompt() {
-  if [ "${AUTO_CONFIRM_PROMPTS}" = true ]; then
+  if [ "${AUTO_CONFIRM}" = true ]; then
     return
   fi
 
@@ -539,10 +550,13 @@ install_grub() {
 
 ########################################
 # Unmount the device and delete temporary directory.
+# Globals:
+#   CLEAN_UP
 # Arguments:
 #   None
 ########################################
 teardown() {
+  [ "${CLEAN_UP}" != true ] && exit
   unmount_partitions
   delete_temporary_directory
 }
