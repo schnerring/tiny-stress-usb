@@ -138,6 +138,7 @@ readonly LOG_FILE="${LOG_DIR}/log.txt"
 readonly TC_ARCH="x86_64"
 readonly TC_VERSION="11"
 readonly TC_SITE_URL="http://tinycorelinux.net/${TC_VERSION}.x/${TC_ARCH}"
+readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 
 ################################################################################
 # FUNCTIONS
@@ -188,6 +189,7 @@ log_header()
 #   TC_ARCH
 #   TC_VERSION
 #   TC_SITE_URL
+#   TC_EXTENSIONS
 # Arguments:
 #   None
 ########################################
@@ -214,6 +216,7 @@ show_runtime_info() {
   log_info "Architecture:   ${TC_ARCH}"
   log_info "Version:        ${TC_VERSION}"
   log_info "Site URL:       ${TC_SITE_URL}"
+  log_info "Extensions:     ${TC_EXTENSIONS}"
 }
 
 ########################################
@@ -422,8 +425,10 @@ download_and_validate_tiny_core_component() {
 # Globals:
 #   DOWNLOAD_DIR
 #   TC_SITE_URL
+# Arguments:
+#   None
 ########################################
-download_tiny_core () {
+download_tiny_core() {
     mkdir -p -- "${DOWNLOAD_DIR}/boot"
 
     log_header "Downloading Tiny Core Linux"
@@ -440,14 +445,16 @@ download_tiny_core () {
 }
 
 ########################################
-# Install Tiny Core Linux on root partition.
+# Install downloaded Tiny Core Linux on root partition.
 # Globals:
 #   DOWNLOAD_DIR
 #   MNT_ROOT
+# Arguments:
+#   None
 ########################################
-install_tiny_core () {
+install_tiny_core() {
   log_header "Installing Tiny Core Linux"
-  cp --recursive "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
+  cp --recursive -- "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
   log_info "Done"
 }
 
@@ -457,6 +464,8 @@ install_tiny_core () {
 #   MNT_EFI
 #   PART_ROOT
 #   WORK_DIR
+# Arguments:
+#   None
 ########################################
 install_grub() {
   log_header "Installing GRUB 2"
@@ -468,11 +477,80 @@ install_grub() {
     --efi-directory="${MNT_EFI}" \
     --removable
 
-  cp "${WORK_DIR}/grub.template.cfg" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
+  cp -- "${WORK_DIR}/grub.template.cfg" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
 
   uuid="$(blkid --match-tag UUID --output value "${PART_ROOT}")"
   sed -i "s/<uuid>/${uuid}/g" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
 
+  log_info "Done"
+}
+
+########################################
+# Download Tiny Core Linux extension.
+# Globals:
+#   DOWNLOAD_DIR
+#   TC_SITE_URL
+# Arguments:
+#   Name of the extension, including the .tcz extension.
+########################################
+already_downloaded=""
+download_tiny_core_extension() {
+  [ -z "$1" ] && return 1
+
+  mkdir -p -- "${DOWNLOAD_DIR}/tce/optional"
+
+  log_info "Downloading: $1"
+
+  if printf '%s' "${already_downloaded}" | grep "$1" > /dev/null 2>&1; then
+    log_info "Already downloaded: $1. Skipping."
+    return
+  fi
+
+  download_and_validate_tiny_core_component \
+    "${TC_SITE_URL}/tcz/$1" \
+    "${DOWNLOAD_DIR}/tce/optional/$1"
+
+  download_file \
+    "${TC_SITE_URL}/tcz/$1.dep" \
+    "${DOWNLOAD_DIR}/tce/optional/$1.dep"
+
+  printf '%s\n' "$1" >> "${DOWNLOAD_DIR}/tce/onboot.lst"
+
+  already_downloaded="${already_downloaded} $1"
+
+  [ ! -f "${DOWNLOAD_DIR}/tce/optional/$1.dep" ] && return
+
+  # download dependencies recursively
+  while read -r dependency; do
+    download_tiny_core_extension "${dependency}"
+  done < "${DOWNLOAD_DIR}/tce/optional/$1.dep"
+}
+
+########################################
+# Download Tiny Core Linux extensions.
+# Globals:
+#   DOWNLOAD_DIR
+#   TC_EXTENSIONS
+# Arguments:
+#   None
+########################################
+download_tiny_core_extensions() {
+  rm -f -- "${DOWNLOAD_DIR}/tce/onboot.lst"
+  for extension in ${TC_EXTENSIONS}; do
+    log_header "Downloading Tiny Core Linux extension: ${extension}"
+    download_tiny_core_extension "${extension}.tcz"
+  done
+}
+
+########################################
+# Install downloaded Tiny Core Linux extensions on root partition.
+# Globals:
+#   DOWNLOAD_DIR
+#   MNT_ROOT
+########################################
+install_tiny_core_extensions() {
+  log_header "Installing Tiny Core Linux extensions"
+  cp --recursive -- "${DOWNLOAD_DIR}/tce" "${MNT_ROOT}"
   log_info "Done"
 }
 
@@ -492,7 +570,9 @@ main() {
   download_tiny_core
   install_tiny_core
   install_grub
-  #unmount_partitions
+  download_tiny_core_extensions
+  install_tiny_core_extensions
+  unmount_partitions
   #delete_temporary_directory
 }
 

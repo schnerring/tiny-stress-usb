@@ -37,3 +37,12 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `sgdisk` for partitioning
   * `tee` for file logging
   * `wget` to download software
+
+## Bundled Tiny Core Extensions
+
+* `e2fsprogs`: `badblocks`
+* `kmaps`: `alternative keyboard layouts`
+* `smartmontools`: `smartctl`
+* `screen`: `badblocks`
+* `e2fsprogs`: session management
+* `systester-cli`: CPU stress tool
