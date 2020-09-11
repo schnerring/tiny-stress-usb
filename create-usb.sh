@@ -67,7 +67,7 @@ if [ -z "$1" ]; then
 fi
 
 # check required software packages
-readonly DEPENDENCIES="grep grub-install lsblk md5sum mkfs.fat mkfs.ext2 mksquashfs partprobe tee wget"
+readonly DEPENDENCIES="grep grub-install lsblk md5sum mkdir mkfs.fat mkfs.ext2 mksquashfs mount partprobe tee wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -100,13 +100,21 @@ if [ "${BUS_CONNECTION}" != "usb" ]; then
 fi
 
 # common directories
-readonly WORKING_DIR="$(pwd)"
-readonly TEMP_DIR="${WORKING_DIR}/temp"
-readonly DOWNLOAD_DIR="${TEMP_DIR}/downloads"
+readonly WORK_DIR="$(pwd)"
+readonly TMP_DIR="${WORK_DIR}/tmp"
+readonly MNT_DIR="${TMP_DIR}/mnt"
+readonly DL_DIR="${TMP_DIR}/downloads"
+
+# partitions
+readonly PART_1="${DEVICE}1" # e.g. /dev/sdc1
+readonly PART_2="${DEVICE}2" # e.g. /dev/sdc2
+
+# mount points
+readonly MNT_1="${MNT_DIR}${PART_1}" # e.g. ./tmp/mnt/dev/sdc1
+readonly MNT_2="${MNT_DIR}${PART_2}" # e.g. ./tmp/mnt/dev/sdc2
 
 # logging
-readonly LOG_SEPARATOR="+-------------------------------------------------------------------------------"
-[ -z "${LOG_DIR}" ] && LOG_DIR="${WORKING_DIR}"
+[ -z "${LOG_DIR}" ] && LOG_DIR="${WORK_DIR}"
 readonly LOG_FILE="${LOG_DIR}/log.txt"
 
 ################################################################################
@@ -137,9 +145,45 @@ log_info()
 ##################################################
 log_header()
 {
-  log_info "${LOG_SEPARATOR}"
+  log_info "+-----------------------------------------------------------"
   log_info "+ $1"
-  log_info "${LOG_SEPARATOR}"
+  log_info "+-----------------------------------------------------------"
+}
+
+########################################
+# Show runtime information.
+# Globals:
+#   DEVICE
+#   BUS_CONNECTION
+#   WORK_DIR
+#   TMP_DIR
+#   MNT_DIR
+#   DL_DIR
+#   PART_1
+#   PART_2
+#   MNT_1
+#   MNT_2
+# Arguments:
+#   None
+########################################
+show_runtime_info() {
+  log_header "Device Information"
+  log_info "Device:         ${DEVICE}"
+  log_info "Bus Connection: ${BUS_CONNECTION}"
+
+  log_header "Common Directories"
+  log_info "Working:        ${WORK_DIR}"
+  log_info "Temporary:      ${TMP_DIR}"
+  log_info "Mount Points:   ${MNT_DIR}"
+  log_info "Downloads:      ${DL_DIR}"
+
+  log_header "EFI Partition"
+  log_info "Partition:      ${PART_1}"
+  log_info "Mount Point:    ${MNT_1}"
+
+  log_header "Target Partition"
+  log_info "Partition:      ${PART_2}"
+  log_info "Mount Point:    ${MNT_2}"
 }
 
 ########################################
@@ -162,6 +206,40 @@ confirmation_prompt() {
   if ! printf '%s' "${REPLY}" | grep "^[Yy]$" > /dev/null 2>&1; then
     exit
   fi
+}
+
+########################################
+# Ensures directories exist.
+# Globals:
+#   TMP_DIR
+#   MNT_DIR
+#   DL_DIR
+# Arguments:
+#   None
+########################################
+ensure_directories() {
+  log_header "Creating directories"
+
+  mkdir -p -- "${TMP_DIR}"
+  mkdir -p -- "${MNT_DIR}"
+  mkdir -p -- "${DL_DIR}"
+  mkdir -p -- "${MNT_1}"
+  mkdir -p -- "${MNT_2}"
+
+  log_info "Done"
+}
+
+########################################
+# Delete temporary directory.
+# Globals:
+#   TMP_DIR
+# Arguments:
+#   None
+########################################
+delete_temporary_directory() {
+  log_header "Deleting temporary directory"
+  rm -rf "${TMP_DIR}"
+  log_info "Done"
 }
 
 ########################################
@@ -199,68 +277,91 @@ read_partition_table() {
 #   None
 ########################################
 wipe_partitions() {
-  log_header "Wiping partitions"
   unmount_partitions
+  log_header "Wiping partitions"
   sgdisk --zap-all "${DEVICE}"
-  read_partition_table
   log_info "Done"
+  read_partition_table
 }
 
 ########################################
-# Creates EFI and target partitions.
+# Create EFI and target partitions.
 # Globals:
 #   DEVICE
 # Arguments:
 #   None
 ########################################
 create_partitions() {
-  log_header "Creating partitions"
-
   #unmount_partitions
 
-  log_info "Creating EFI partition (100 MiB)"
+  log_header "Creating EFI partition (100 MiB)"
   sgdisk --new 1:0:+100M --typecode 1:ef00 "${DEVICE}"
+  log_info "Done"
 
-  log_info "Creating target partition (100%FREE)"
+  log_header "Creating target partition (100%FREE)"
   sgdisk --new 2:0:0 "${DEVICE}"
+  log_info "Done"
 
   read_partition_table
-
-  log_info "Done"
 }
 
 ########################################
-# Creates file systems.
+# Create file systems.
 # Globals:
-#   EFI_PARTITION
-#   TARGET_PARTITION
+#   PART_1
+#   PART_2
 # Arguments:
 #   None
 ########################################
 create_file_systems() {
-  log_header "Creating file systems"
-
   unmount_partitions
 
-  log_info "Creating FAT32 file system on EFI partition"
-  mkfs.fat -F 32 "${DEVICE}1"
+  log_header "Creating FAT32 file system on EFI partition"
+  mkfs.fat -F 32 "${PART_1}"
+  log_info "Done"
 
-  log_info "Creating ext2 file system on target partition"
-  mkfs.ext2 -F "${DEVICE}2"
+  log_header "Creating ext2 file system on target partition"
+  mkfs.ext2 -F "${PART_2}"
+  log_info "Done"
+}
+
+########################################
+# Mount file systems.
+# Globals:
+#   PART_1
+#   PART_2
+#   MNT_1
+#   MNT_2
+# Arguments:
+#   None
+########################################
+mount_file_systems() {
+  unmount_partitions
+
+  log_header "Mounting file systems"
+
+  mount "${PART_1}" "${MNT_1}"
+  mount "${PART_2}" "${MNT_2}"
 
   log_info "Done"
 }
 
-##################################################
+
+########################################
 # Main function of script.
 # Arguments:
 #   None
-##################################################
+########################################
 main() {
+  show_runtime_info
   confirmation_prompt
+  ensure_directories
   wipe_partitions
   create_partitions
   create_file_systems
+  mount_file_systems
+  #unmount_partitions
+  #delete_temporary_directory
 }
 
 # entrypoint
