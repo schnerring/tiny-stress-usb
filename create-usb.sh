@@ -118,9 +118,9 @@ readonly MNT_2="${MNT_DIR}${PART_2}" # e.g. ./tmp/mnt/dev/sdc2
 readonly LOG_FILE="${LOG_DIR}/log.txt"
 
 # Tiny Core Linux
-TC_ARCH="x86_64"
-TC_VERSION="11"
-TC_SITE_URL="http://tinycorelinux.net/${TC_VERSION}.x/${TC_ARCH}"
+readonly TC_ARCH="x86_64"
+readonly TC_VERSION="11"
+readonly TC_SITE_URL="http://tinycorelinux.net/${TC_VERSION}.x/${TC_ARCH}"
 
 ################################################################################
 # FUNCTIONS
@@ -168,6 +168,9 @@ log_header()
 #   PART_2
 #   MNT_1
 #   MNT_2
+#   TC_ARCH
+#   TC_VERSION
+#   TC_SITE_URL
 # Arguments:
 #   None
 ########################################
@@ -186,9 +189,14 @@ show_runtime_info() {
   log_info "Partition:      ${PART_1}"
   log_info "Mount Point:    ${MNT_1}"
 
-  log_header "Target Partition"
+  log_header "Root Partition"
   log_info "Partition:      ${PART_2}"
   log_info "Mount Point:    ${MNT_2}"
+
+  log_header "Tiny Core Linux"
+  log_info "Architecture:   ${TC_ARCH}"
+  log_info "Version:        ${TC_VERSION}"
+  log_info "Site URL:       ${TC_SITE_URL}"
 }
 
 ########################################
@@ -223,7 +231,7 @@ confirmation_prompt() {
 #   None
 ########################################
 ensure_directories() {
-  log_header "Creating directories"
+  log_header "Creating Directories"
 
   mkdir -p -- "${TMP_DIR}"
   mkdir -p -- "${MNT_DIR}"
@@ -242,7 +250,7 @@ ensure_directories() {
 #   None
 ########################################
 delete_temporary_directory() {
-  log_header "Deleting temporary directory"
+  log_header "Deleting Temporary Directory"
   rm -rf "${TMP_DIR}"
   log_info "Done"
 }
@@ -283,14 +291,14 @@ read_partition_table() {
 ########################################
 wipe_partitions() {
   unmount_partitions
-  log_header "Wiping partitions"
+  log_header "Wiping Partitions"
   sgdisk --zap-all "${DEVICE}"
   log_info "Done"
   read_partition_table
 }
 
 ########################################
-# Create EFI and target partitions.
+# Create EFI and root partitions.
 # Globals:
 #   DEVICE
 # Arguments:
@@ -299,11 +307,11 @@ wipe_partitions() {
 create_partitions() {
   #unmount_partitions
 
-  log_header "Creating EFI partition (100 MiB)"
+  log_header "Creating EFI Partition (100 MiB)"
   sgdisk --new 1:0:+100M --typecode 1:ef00 "${DEVICE}"
   log_info "Done"
 
-  log_header "Creating target partition (100%FREE)"
+  log_header "Creating Root Partition (100%FREE)"
   sgdisk --new 2:0:0 "${DEVICE}"
   log_info "Done"
 
@@ -321,11 +329,11 @@ create_partitions() {
 create_file_systems() {
   unmount_partitions
 
-  log_header "Creating FAT32 file system on EFI partition"
+  log_header "Creating FAT32 File System On EFI Partition"
   mkfs.fat -F 32 "${PART_1}"
   log_info "Done"
 
-  log_header "Creating ext2 file system on target partition"
+  log_header "Creating ext2 File System On Root Partition"
   mkfs.ext2 -F "${PART_2}"
   log_info "Done"
 }
@@ -343,7 +351,7 @@ create_file_systems() {
 mount_file_systems() {
   unmount_partitions
 
-  log_header "Mounting file systems"
+  log_header "Mounting File Systems"
 
   mount "${PART_1}" "${MNT_1}"
   mount "${PART_2}" "${MNT_2}"
@@ -359,11 +367,11 @@ mount_file_systems() {
 ########################################
 download_file() {
     wget \
-        --quiet \
-        --continue \
-        --show-progress \
-        --output-document="$2" \
-        "$1"
+      --quiet \
+      --continue \
+      --show-progress \
+      --output-document="$2" \
+      "$1"
 }
 
 ########################################
@@ -404,12 +412,12 @@ download_tiny_core () {
     log_header "Downloading Tiny Core Linux"
 
     download_and_validate_tiny_core_component \
-        "${TC_SITE_URL}/release/distribution_files/corepure64.gz" \
-        "${DOWNLOAD_DIR}/boot/corepure64.gz"
+      "${TC_SITE_URL}/release/distribution_files/corepure64.gz" \
+      "${DOWNLOAD_DIR}/boot/corepure64.gz"
 
     download_and_validate_tiny_core_component \
-        "${TC_SITE_URL}/release/distribution_files/vmlinuz64" \
-        "${DOWNLOAD_DIR}/boot/vmlinuz64"
+      "${TC_SITE_URL}/release/distribution_files/vmlinuz64" \
+      "${DOWNLOAD_DIR}/boot/vmlinuz64"
 
     log_info "Done"
 }
