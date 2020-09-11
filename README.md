@@ -19,6 +19,8 @@ Most inspiring were the following resources, found in the iXsystems Community's 
 * POSIX compatible shell
 * Must be run as `root`
 * Required software packages:
+  * `basename`
+  * `dirname`
   * `grep`
   * `grub-install` to install GRUB
   * `lsblk` to check if USB device

@@ -67,7 +67,7 @@ if [ -z "$1" ]; then
 fi
 
 # check required software packages
-readonly DEPENDENCIES="grep grub-install lsblk md5sum mkdir mkfs.fat mkfs.ext2 mksquashfs mount partprobe tee wget"
+readonly DEPENDENCIES="basename dirname grep grub-install lsblk md5sum mkdir mkfs.fat mkfs.ext2 mksquashfs mount partprobe tee wget"
 for dependency in ${DEPENDENCIES}; do
   if ! command -v "${dependency}" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "${dependency}" >&2
@@ -103,7 +103,7 @@ fi
 readonly WORK_DIR="$(pwd)"
 readonly TMP_DIR="${WORK_DIR}/tmp"
 readonly MNT_DIR="${TMP_DIR}/mnt"
-readonly DL_DIR="${TMP_DIR}/downloads"
+readonly DOWNLOAD_DIR="${TMP_DIR}/downloads"
 
 # partitions
 readonly PART_1="${DEVICE}1" # e.g. /dev/sdc1
@@ -116,6 +116,11 @@ readonly MNT_2="${MNT_DIR}${PART_2}" # e.g. ./tmp/mnt/dev/sdc2
 # logging
 [ -z "${LOG_DIR}" ] && LOG_DIR="${WORK_DIR}"
 readonly LOG_FILE="${LOG_DIR}/log.txt"
+
+# Tiny Core Linux
+TC_ARCH="x86_64"
+TC_VERSION="11"
+TC_SITE_URL="http://tinycorelinux.net/${TC_VERSION}.x/${TC_ARCH}"
 
 ################################################################################
 # FUNCTIONS
@@ -158,7 +163,7 @@ log_header()
 #   WORK_DIR
 #   TMP_DIR
 #   MNT_DIR
-#   DL_DIR
+#   DOWNLOAD_DIR
 #   PART_1
 #   PART_2
 #   MNT_1
@@ -175,7 +180,7 @@ show_runtime_info() {
   log_info "Working:        ${WORK_DIR}"
   log_info "Temporary:      ${TMP_DIR}"
   log_info "Mount Points:   ${MNT_DIR}"
-  log_info "Downloads:      ${DL_DIR}"
+  log_info "Downloads:      ${DOWNLOAD_DIR}"
 
   log_header "EFI Partition"
   log_info "Partition:      ${PART_1}"
@@ -213,7 +218,7 @@ confirmation_prompt() {
 # Globals:
 #   TMP_DIR
 #   MNT_DIR
-#   DL_DIR
+#   DOWNLOAD_DIR
 # Arguments:
 #   None
 ########################################
@@ -222,7 +227,7 @@ ensure_directories() {
 
   mkdir -p -- "${TMP_DIR}"
   mkdir -p -- "${MNT_DIR}"
-  mkdir -p -- "${DL_DIR}"
+  mkdir -p -- "${DOWNLOAD_DIR}"
   mkdir -p -- "${MNT_1}"
   mkdir -p -- "${MNT_2}"
 
@@ -346,6 +351,68 @@ mount_file_systems() {
   log_info "Done"
 }
 
+########################################
+# Download file.
+# Arguments:
+#   Download URL.
+#   Destination file.
+########################################
+download_file() {
+    wget \
+        --quiet \
+        --continue \
+        --show-progress \
+        --output-document="$2" \
+        "$1"
+}
+
+########################################
+# Download Tiny Core Linux component and validate its MD5 checksum.
+# Exit on checksum error.
+# Globals:
+#   WORK_DIR
+# Arguments:
+#   Download URL.
+#   Destination file.
+########################################
+download_and_validate_tiny_core_component() {
+    cd "$(dirname "$2")" || exit 2
+
+    download_file "$1"         "$(basename "$2")"
+    download_file "$1.md5.txt" "$(basename "$2").md5.txt"
+
+    md5sum --check "$(basename "$2").md5.txt"
+    validation_status="$?"
+
+    cd "${WORK_DIR}" || exit 2
+
+    if [ "${validation_status}" -ne 0 ]; then
+      log_info "Checksum error" 2>&1
+      exit 2
+    fi
+}
+
+########################################
+# Download Tiny Core Linux core components.
+# Globals:
+#   DOWNLOAD_DIR
+#   TC_SITE_URL
+########################################
+download_tiny_core () {
+    mkdir -p -- "${DOWNLOAD_DIR}/boot"
+
+    log_header "Downloading Tiny Core Linux"
+
+    download_and_validate_tiny_core_component \
+        "${TC_SITE_URL}/release/distribution_files/corepure64.gz" \
+        "${DOWNLOAD_DIR}/boot/corepure64.gz"
+
+    download_and_validate_tiny_core_component \
+        "${TC_SITE_URL}/release/distribution_files/vmlinuz64" \
+        "${DOWNLOAD_DIR}/boot/vmlinuz64"
+
+    log_info "Done"
+}
 
 ########################################
 # Main function of script.
@@ -360,6 +427,7 @@ main() {
   create_partitions
   create_file_systems
   mount_file_systems
+  download_tiny_core
   #unmount_partitions
   #delete_temporary_directory
 }
