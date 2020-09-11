@@ -106,12 +106,12 @@ readonly MNT_DIR="${TMP_DIR}/mnt"
 readonly DOWNLOAD_DIR="${TMP_DIR}/downloads"
 
 # partitions
-readonly PART_1="${DEVICE}1" # e.g. /dev/sdc1
-readonly PART_2="${DEVICE}2" # e.g. /dev/sdc2
+readonly PART_EFI="${DEVICE}1" # e.g. /dev/sdc1
+readonly PART_ROOT="${DEVICE}2" # e.g. /dev/sdc2
 
 # mount points
-readonly MNT_1="${MNT_DIR}${PART_1}" # e.g. ./tmp/mnt/dev/sdc1
-readonly MNT_2="${MNT_DIR}${PART_2}" # e.g. ./tmp/mnt/dev/sdc2
+readonly MNT_EFI="${MNT_DIR}${PART_EFI}" # e.g. ./tmp/mnt/dev/sdc1
+readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
 
 # logging
 [ -z "${LOG_DIR}" ] && LOG_DIR="${WORK_DIR}"
@@ -164,10 +164,10 @@ log_header()
 #   TMP_DIR
 #   MNT_DIR
 #   DOWNLOAD_DIR
-#   PART_1
-#   PART_2
-#   MNT_1
-#   MNT_2
+#   PART_EFI
+#   PART_ROOT
+#   MNT_EFI
+#   MNT_ROOT
 #   TC_ARCH
 #   TC_VERSION
 #   TC_SITE_URL
@@ -186,12 +186,12 @@ show_runtime_info() {
   log_info "Downloads:      ${DOWNLOAD_DIR}"
 
   log_header "EFI Partition"
-  log_info "Partition:      ${PART_1}"
-  log_info "Mount Point:    ${MNT_1}"
+  log_info "Partition:      ${PART_EFI}"
+  log_info "Mount Point:    ${MNT_EFI}"
 
   log_header "Root Partition"
-  log_info "Partition:      ${PART_2}"
-  log_info "Mount Point:    ${MNT_2}"
+  log_info "Partition:      ${PART_ROOT}"
+  log_info "Mount Point:    ${MNT_ROOT}"
 
   log_header "Tiny Core Linux"
   log_info "Architecture:   ${TC_ARCH}"
@@ -236,8 +236,8 @@ ensure_directories() {
   mkdir -p -- "${TMP_DIR}"
   mkdir -p -- "${MNT_DIR}"
   mkdir -p -- "${DOWNLOAD_DIR}"
-  mkdir -p -- "${MNT_1}"
-  mkdir -p -- "${MNT_2}"
+  mkdir -p -- "${MNT_EFI}"
+  mkdir -p -- "${MNT_ROOT}"
 
   log_info "Done"
 }
@@ -321,8 +321,8 @@ create_partitions() {
 ########################################
 # Create file systems.
 # Globals:
-#   PART_1
-#   PART_2
+#   PART_EFI
+#   PART_ROOT
 # Arguments:
 #   None
 ########################################
@@ -330,21 +330,21 @@ create_file_systems() {
   unmount_partitions
 
   log_header "Creating FAT32 File System On EFI Partition"
-  mkfs.fat -F 32 "${PART_1}"
+  mkfs.fat -F 32 "${PART_EFI}"
   log_info "Done"
 
   log_header "Creating ext2 File System On Root Partition"
-  mkfs.ext2 -F "${PART_2}"
+  mkfs.ext2 -F "${PART_ROOT}"
   log_info "Done"
 }
 
 ########################################
 # Mount file systems.
 # Globals:
-#   PART_1
-#   PART_2
-#   MNT_1
-#   MNT_2
+#   PART_EFI
+#   PART_ROOT
+#   MNT_EFI
+#   MNT_ROOT
 # Arguments:
 #   None
 ########################################
@@ -353,8 +353,8 @@ mount_file_systems() {
 
   log_header "Mounting File Systems"
 
-  mount "${PART_1}" "${MNT_1}"
-  mount "${PART_2}" "${MNT_2}"
+  mount "${PART_EFI}" "${MNT_EFI}"
+  mount "${PART_ROOT}" "${MNT_ROOT}"
 
   log_info "Done"
 }
