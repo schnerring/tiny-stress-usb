@@ -160,7 +160,7 @@ readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 log_info()
 {
   now="$(date +"%F %T")"
-  printf "%s\n" "[${now}] $1" | tee -a "${LOG_FILE}"
+  printf '%s\n' "[${now}] $1" | tee -a "${LOG_FILE}"
 }
 
 ##################################################
@@ -386,17 +386,21 @@ mount_file_systems() {
 
 ########################################
 # Download file.
+# Globals:
+#   WORK_DIR
 # Arguments:
 #   Download URL.
 #   Destination file.
 ########################################
 download_file() {
+    cd "$(dirname "$2")" || exit 2
     wget \
       --quiet \
       --continue \
       --show-progress \
-      --output-document="$2" \
+      --output-document="$(basename "$2")" \
       "$1"
+    cd "${WORK_DIR}" || exit 2
 }
 
 ########################################
@@ -409,14 +413,12 @@ download_file() {
 #   Destination file.
 ########################################
 download_and_validate_tiny_core_component() {
+    download_file "$1"         "$2"
+    download_file "$1.md5.txt" "$2.md5.txt"
+
     cd "$(dirname "$2")" || exit 2
-
-    download_file "$1"         "$(basename "$2")"
-    download_file "$1.md5.txt" "$(basename "$2").md5.txt"
-
     md5sum --check "$(basename "$2").md5.txt"
     validation_status="$?"
-
     cd "${WORK_DIR}" || exit 2
 
     if [ "${validation_status}" -ne 0 ]; then
@@ -507,6 +509,39 @@ download_tiny_core_extensions() {
 }
 
 ########################################
+# Create custom disk-burnin extension.
+# Globals:
+#   DOWNLOAD_DIR
+# Arguments:
+#   None
+########################################
+create_custom_disk_burnin_extension() {
+  log_header "Creating Disk Burn-In Extension"
+
+  log_info "Downloading script"
+
+  mkdir -p "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin"
+  download_file \
+    "https://raw.githubusercontent.com/Spearfoot/disk-burnin-and-testing/master/disk-burnin.sh" \
+    "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin/disk-burnin.sh"
+  chmod +x "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin/disk-burnin.sh"
+
+  log_info "Packaging extension"
+
+  mksquashfs \
+    "${DOWNLOAD_DIR}/disk-burnin-and-testing" \
+    "${DOWNLOAD_DIR}/tce/optional/disk-burnin.tcz" \
+    -b 4k \
+    -no-xattrs \
+    -noappend \
+    -quiet
+
+  printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
+
+  log_info "Done"
+}
+
+########################################
 # Install downloaded Tiny Core Linux on root partition.
 # Globals:
 #   DOWNLOAD_DIR
@@ -557,6 +592,7 @@ install_grub() {
 ########################################
 teardown() {
   [ "${CLEAN_UP}" != true ] && exit
+  log_header "Cleaning Up"
   unmount_partitions
   delete_temporary_directory
 }
@@ -578,7 +614,7 @@ main() {
   download_tiny_core_extensions
   install_tiny_core
   install_grub
-  unmount_partitions
+  create_custom_disk_burnin_extension
   teardown
 }
 
