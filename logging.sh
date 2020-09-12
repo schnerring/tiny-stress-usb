@@ -16,6 +16,9 @@ log_info()
 {
   now="$(date +"%F %T")"
   printf '%s\n' "[${now}] $1" | tee -a "${LOG_FILE}"
+
+  log_status="$?"
+  [ "${log_status}" = 0 ] && return || exit 1
 }
 
 ##################################################

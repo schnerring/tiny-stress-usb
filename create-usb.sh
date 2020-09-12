@@ -1,11 +1,49 @@
 #!/bin/sh
+readonly USAGE=\
+"NAME
+    $(basename "$0") -- create tiny, bootable stress test USB
 
-. "./display-help.sh"
+SYNOPSIS
+    $(basename "$0") [-h] [-l <directory>] <device>
+
+DESCRIPTION
+    Tool to create a bootable USB device, including a minimal Tiny Core Linux
+    installation and various stress testing tools.
+
+    ALL DATA ON <device> WILL BE LOST!
+
+OPTIONS
+    -h                Show help text
+    -c                Clean up after the program succeeds. Delete temporary
+                      directory and unmount the device.
+    -l <directory>    Write log files to <directory> (default: $(pwd))
+    -y                Automatic \"yes\" to prompts
+    <device>          USB device to use (/dev/ may be omitted)
+
+EXAMPLES
+    $(basename "$0") sda
+
+    $(basename "$0") -l . /dev/sdb
+
+    $(basename "$0") -l ~/logs sdc"
+
+########################################
+# Show help text.
+# Globals:
+#   USAGE
+# Arguments:
+#   None
+# Outputs:
+#   Write help text to stdout.
+########################################
+show_help() {
+  printf '%s\n' "${USAGE}"
+}
 
 # parse options
 while getopts ':hcl:y' option; do
   case "${option}" in
-    h)  display_help
+    h)  show_help
         exit
         ;;
     c)  readonly CLEAN_UP=true
@@ -15,11 +53,11 @@ while getopts ':hcl:y' option; do
     y)  readonly AUTO_CONFIRM=true
         ;;
     :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
-        display_help >&2
+        show_help >&2
         exit 2
         ;;
    \?)  printf 'Illegal option: -%s\n\n' "${OPTARG}" >&2
-        display_help >&2
+        show_help >&2
         exit 2
         ;;
   esac
@@ -28,7 +66,7 @@ shift $(( OPTIND - 1 ))
 
 if [ -z "$1" ]; then
   printf 'Missing option: <device>\n\n' >&2
-  display_help >&2
+  show_help >&2
   exit 2
 fi
 
@@ -73,6 +111,9 @@ fi
 
 DEVICE="$1"
 
+. "./logging.sh"
+. "./format-usb.sh"
+
 # common directories
 readonly WORK_DIR="$(pwd)"
 readonly TMP_DIR="${WORK_DIR}/tmp"
@@ -97,8 +138,6 @@ readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 # FUNCTIONS
 ################################################################################
 
-. "./logging.sh"
-. "./format-usb.sh"
 
 ########################################
 # Show runtime information.
@@ -328,43 +367,6 @@ download_tiny_core_extensions() {
 }
 
 ########################################
-# Create custom disk-burnin extension.
-# Globals:
-#   DOWNLOAD_DIR
-# Arguments:
-#   None
-########################################
-create_custom_disk_burnin_extension() {
-  log_header "Creating Disk Burn-In Extension"
-
-  log_info "Downloading script"
-
-  mkdir -p "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin"
-  cd "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin" || exit 2
-  git clone \
-    --depth=1 \
-    --branch=master \
-    "https://github.com/Spearfoot/disk-burnin-and-testing.git"
-  rm -rf "disk-burnin-and-testing/.git"
-  ln -s "disk-burnin-and-testing/disk-burnin.sh" "disk-burnin"
-  cd "${WORK_DIR}" || exit 2
-
-  log_info "Packaging extension"
-
-  mksquashfs \
-    "${DOWNLOAD_DIR}/disk-burnin-and-testing" \
-    "${DOWNLOAD_DIR}/tce/optional/disk-burnin.tcz" \
-    -b 4k \
-    -no-xattrs \
-    -noappend \
-    -quiet
-
-  printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
-
-  log_info "Done"
-}
-
-########################################
 # Install downloaded Tiny Core Linux on root partition.
 # Globals:
 #   DOWNLOAD_DIR
@@ -432,7 +434,8 @@ main() {
   mount_file_systems
   download_tiny_core
   download_tiny_core_extensions
-  create_custom_disk_burnin_extension
+  sh "./tc_create_disk_burnin_extension.sh" -o "${DOWNLOAD_DIR}/tce/optional"
+  printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
   install_tiny_core
   install_grub
   teardown
