@@ -37,6 +37,7 @@ readonly DEPENDENCIES="
 basename
 blkid
 cp
+date
 dirname
 git
 grep
@@ -98,10 +99,6 @@ readonly PART_ROOT="${DEVICE}2" # e.g. /dev/sdc2
 readonly MNT_EFI="${MNT_DIR}${PART_EFI}" # e.g. ./tmp/mnt/dev/sdc1
 readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
 
-# logging
-[ -z "${LOG_DIR}" ] && LOG_DIR="${WORK_DIR}"
-readonly LOG_FILE="${LOG_DIR}/log.txt"
-
 # Tiny Core Linux
 readonly TC_ARCH="x86_64"
 readonly TC_VERSION="11"
@@ -112,34 +109,7 @@ readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 # FUNCTIONS
 ################################################################################
 
-##################################################
-# Log informational message.
-# Globals:
-#   LOG_FILE
-# Arguments:
-#   Message to log.
-# Outputs:
-#   Write message to stdout and log file.
-##################################################
-log_info()
-{
-  now="$(date +"%F %T")"
-  printf '%s\n' "[${now}] $1" | tee -a "${LOG_FILE}"
-}
-
-##################################################
-# Log emphasized header message.
-# Globals:
-#   LOG_SEPARATOR
-# Arguments:
-#   Message to log.
-##################################################
-log_header()
-{
-  log_info "+-----------------------------------------------------------"
-  log_info "+ $1"
-  log_info "+-----------------------------------------------------------"
-}
+. "./logging.sh"
 
 ########################################
 # Show runtime information.

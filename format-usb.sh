@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. "./logging.sh"
+
 ########################################
 # Prompts for user confirmation.
 # Arguments:

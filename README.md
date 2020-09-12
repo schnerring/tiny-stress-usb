@@ -22,6 +22,7 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `basename`
   * `blkid` to query partition UUID
   * `cp`
+  * `date`: timestamps for logging
   * `dirname`
   * `git`: clone repositories
   * `grep`
