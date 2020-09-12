@@ -429,7 +429,7 @@ install_grub() {
 teardown() {
   [ "${CLEAN_UP}" != true ] && exit
   log_header "Cleaning Up"
-  unmount_partitions
+  unmount_partitions "${DEVICE}"
   delete_temporary_directory
 }
 

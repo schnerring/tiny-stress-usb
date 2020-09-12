@@ -2,6 +2,10 @@
 
 . "./logging.sh"
 
+# Duration to wait before attempting to unmount the device.
+# Slow systems might take longer.
+readonly SLEEP_BEFORE_UNMOUNT=1
+
 ########################################
 # Prompts for user confirmation.
 # Arguments:
@@ -26,14 +30,15 @@ confirmation_prompt() {
 # Unmount all device partitions.
 # The OS might auto-mount partitions in between steps which is why this function
 # is called repeatedly throughout the script.
+# Globals:
+#   SLEEP_DURATION_BEFORE_UNMOUNT
 # Arguments:
 #   Device.
 ########################################
 unmount_partitions() {
   log_info "Unmounting partitions"
-  sleep 1
-  umount --quiet "$1"?*
-  sleep 1
+  sleep "${SLEEP_BEFORE_UNMOUNT}"
+  umount --quiet "$1"?* 2> /dev/null
 }
 
 ########################################
@@ -42,8 +47,11 @@ unmount_partitions() {
 #   Device.
 ########################################
 read_partition_table() {
+  # TODO
+  # Investigate reported errors about not being able to inform the kernel
+  # because it seems to be working.
+  partprobe "$1" 2> /dev/null
   unmount_partitions "$1"
-  partprobe "$1"
 }
 
 ########################################
@@ -52,10 +60,14 @@ read_partition_table() {
 #   Device
 ########################################
 wipe_partitions() {
-  log_header "Wiping Partitions"
-  sgdisk --zap-all "$1"
-  log_info "Done"
   read_partition_table "$1"
+  log_header "Wiping Partitions"
+  # surpress warnings about having to re-read the partition table
+  if ! sgdisk --zap-all "$1" 1> /dev/null; then
+    log_info "Failed" >&2
+    exit 1
+  fi
+  log_info "Done"
 }
 
 ########################################
@@ -64,15 +76,20 @@ wipe_partitions() {
 #   Device.
 ########################################
 create_partitions() {
+  read_partition_table "$1"
   log_header "Creating EFI Partition (100 MiB)"
-  sgdisk --new 1:0:+100M --typecode 1:ef00 "$1"
+  if ! sgdisk --new 1:0:+100M --typecode 1:ef00 "$1"; then
+    log_info "Failed" >&2
+    exit 1
+  fi
   log_info "Done"
 
   log_header "Creating Root Partition (100%FREE)"
-  sgdisk --new 2:0:0 "$1"
+  if ! sgdisk --new 2:0:0 "$1"; then
+    log_info "Failed" >&2
+    exit 1
+  fi
   log_info "Done"
-
-  read_partition_table "$1"
 }
 
 ########################################
@@ -81,12 +98,19 @@ create_partitions() {
 #   Device.
 ########################################
 create_file_systems() {
+  read_partition_table "$1"
   log_header "Creating FAT32 File System On EFI Partition"
-  mkfs.fat -F 32 "${1}1" # e.g. /dev/sdc1
+  if ! mkfs.fat -F 32 "${1}1"; then # e.g. /dev/sdc1
+    log_info "Failed" >&2
+    exit 1
+  fi
   log_info "Done"
 
   log_header "Creating ext2 File System On Root Partition"
-  mkfs.ext2 -F "${1}2" # e.g. /dev/sdc2
+  if ! mkfs.ext2 -F "${1}2"; then # e.g. /dev/sdc2
+    log_info "Failed" >&2
+    exit 1
+  fi
   log_info "Done"
 
   unmount_partitions "$1"
@@ -101,7 +125,6 @@ create_file_systems() {
 #     - false otherwise
 ########################################
 format_usb() {
-  read_partition_table "$1"
   confirmation_prompt "$1" "$2"
   wipe_partitions "$1"
   create_partitions "$1"
