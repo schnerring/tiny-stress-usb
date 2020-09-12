@@ -227,7 +227,7 @@ show_runtime_info() {
   log_info "Extensions:     ${TC_EXTENSIONS}"
 
   log_header "Other"
-  log_info "Auto Confirm:   ${AUTO_CONFIRM}"
+  log_info "Auto-Confirm:   ${AUTO_CONFIRM}"
   log_info "Clean Up:       ${CLEAN_UP}"
 
 }
@@ -503,16 +503,16 @@ teardown() {
 
 ########################################
 # Main function of script.
+# Globals:
+#   AUTO_CONFIRM
+#   DEVICE
 # Arguments:
 #   None
 ########################################
 main() {
   show_runtime_info
-  confirmation_prompt
   ensure_directories
-  wipe_partitions
-  create_partitions
-  create_file_systems
+  format_usb "${DEVICE}" "${AUTO_CONFIRM}"
   mount_file_systems
   download_tiny_core
   download_tiny_core_extensions
