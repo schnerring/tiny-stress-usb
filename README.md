@@ -23,8 +23,10 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `blkid` to query partition UUID
   * `cp`
   * `dirname`
+  * `git`: clone repositories
   * `grep`
   * `grub-install` to install GRUB
+  * `ln`: create symbolic links
   * `lsblk` to check if USB device
   * `md5sum` to validate downloads
   * `mkdir` to create directories

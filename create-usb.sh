@@ -76,8 +76,10 @@ basename
 blkid
 cp
 dirname
+git
 grep
 grub-install
+ln
 lsblk
 md5sum
 mkdir
@@ -521,10 +523,14 @@ create_custom_disk_burnin_extension() {
   log_info "Downloading script"
 
   mkdir -p "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin"
-  download_file \
-    "https://raw.githubusercontent.com/Spearfoot/disk-burnin-and-testing/master/disk-burnin.sh" \
-    "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin/disk-burnin.sh"
-  chmod +x "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin/disk-burnin.sh"
+  cd "${DOWNLOAD_DIR}/disk-burnin-and-testing/usr/local/bin" || exit 2
+  git clone \
+    --depth=1 \
+    --branch=master \
+    "https://github.com/Spearfoot/disk-burnin-and-testing.git"
+  rm -rf "disk-burnin-and-testing/.git"
+  ln -s "disk-burnin-and-testing/disk-burnin.sh" "disk-burnin"
+  cd "${WORK_DIR}" || exit 2
 
   log_info "Packaging extension"
 
@@ -612,9 +618,9 @@ main() {
   mount_file_systems
   download_tiny_core
   download_tiny_core_extensions
+  create_custom_disk_burnin_extension
   install_tiny_core
   install_grub
-  create_custom_disk_burnin_extension
   teardown
 }
 
