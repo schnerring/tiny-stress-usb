@@ -72,18 +72,6 @@ fi
 ################################################################################
 
 DEVICE="$1"
-# prepend /dev/ if necessary
-if ! printf '%s' "${DEVICE}" | grep -q "/dev/\w*"; then
-  DEVICE="/dev/${DEVICE}"
-fi
-readonly DEVICE
-
-# check if USB device
-readonly BUS_CONNECTION="$(lsblk --nodeps --noheadings --output TRAN "${DEVICE}")"
-if [ "${BUS_CONNECTION}" != "usb" ]; then
-  printf 'Not a USB device: %s\n' "${DEVICE}" >&2
-  exit 2
-fi
 
 # common directories
 readonly WORK_DIR="$(pwd)"
@@ -110,6 +98,7 @@ readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 ################################################################################
 
 . "./logging.sh"
+. "./format-usb.sh"
 
 ########################################
 # Show runtime information.
@@ -163,8 +152,6 @@ show_runtime_info() {
   log_info "Clean Up:       ${CLEAN_UP}"
 
 }
-
-. "./format-usb.sh"
 
 ########################################
 # Ensures directories exist.
@@ -429,22 +416,19 @@ install_grub() {
 teardown() {
   [ "${CLEAN_UP}" != true ] && exit
   log_header "Cleaning Up"
-  unmount_partitions "${DEVICE}"
+  unmount_partitions
   delete_temporary_directory
 }
 
 ########################################
 # Main function of script.
-# Globals:
-#   AUTO_CONFIRM
-#   DEVICE
 # Arguments:
 #   None
 ########################################
 main() {
   show_runtime_info
   ensure_directories
-  format_usb "${DEVICE}" "${AUTO_CONFIRM}"
+  format_usb
   mount_file_systems
   download_tiny_core
   download_tiny_core_extensions
