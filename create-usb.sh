@@ -17,7 +17,7 @@ OPTIONS
     -c                Clean up after the program succeeds. Delete temporary
                       directory and unmount the device.
     -l <directory>    Write log files to <directory> (default: $(pwd))
-    -y                Automatic \"yes\" to prompts
+    -y                Automatic yes to prompts
     <device>          USB device to use (/dev/ may be omitted)
 
 EXAMPLES
@@ -70,6 +70,11 @@ if [ -z "$1" ]; then
   exit 2
 fi
 
+readonly SCRIPT_DIR="$(dirname "$0")"
+
+# include script dir in path
+PATH="${SCRIPT_DIR}:${PATH}"
+
 # check required software packages
 readonly DEPENDENCIES="
 basename
@@ -99,11 +104,7 @@ for dependency in ${DEPENDENCIES}; do
   fi
 done
 
-# check if running as root
-if [ "$(id -u)" -ne 0 ]; then
-  printf 'Must run as root\n' >&2
-  exit 2
-fi
+ensure_root_privileges.sh || exit "$?"
 
 ################################################################################
 # CONSTANTS
@@ -137,7 +138,6 @@ readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 ################################################################################
 # FUNCTIONS
 ################################################################################
-
 
 ########################################
 # Show runtime information.
@@ -434,7 +434,7 @@ main() {
   mount_file_systems
   download_tiny_core
   download_tiny_core_extensions
-  sh "./tc_create_disk_burnin_extension.sh" -o "${DOWNLOAD_DIR}/tce/optional"
+  tc_create_disk_burnin_extension.sh -o "${DOWNLOAD_DIR}/tce/optional"
   printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
   install_tiny_core
   install_grub
