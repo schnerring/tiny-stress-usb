@@ -4,7 +4,7 @@
 readonly SCRIPT_DIR="$(dirname -- "$0")"
 PATH="${SCRIPT_DIR}:${PATH}"
 
-. "./logging.sh"
+. "util/logging.sh"
 
 readonly USAGE=\
 "NAME

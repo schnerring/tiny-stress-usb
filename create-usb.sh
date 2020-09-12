@@ -97,8 +97,8 @@ ensure_root_privileges.sh || exit "$?"
 
 DEVICE="$1"
 
-. "./logging.sh"
-. "./format-usb.sh"
+. "util/logging.sh"
+. "format-usb.sh"
 
 # common directories
 readonly WORK_DIR="$(pwd)"

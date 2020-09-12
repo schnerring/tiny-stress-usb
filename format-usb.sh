@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "./logging.sh"
+. "util/logging.sh"
 
 # prepend /dev/ if necessary
 if ! printf '%s' "${DEVICE}" | grep -q "/dev/\w*"; then
