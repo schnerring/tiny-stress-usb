@@ -97,13 +97,9 @@ partprobe
 sed
 tee
 wget"
-for dependency in ${DEPENDENCIES}; do
-  if ! command -v "${dependency}" > /dev/null 2>&1; then
-    printf 'Command not found: %s\n' "${dependency}" >&2
-    exit 2
-  fi
-done
 
+# shellcheck disable=SC2086
+ensure_dependencies.sh ${DEPENDENCIES} || exit "$?"
 ensure_root_privileges.sh || exit "$?"
 
 ################################################################################
