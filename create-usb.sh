@@ -1,10 +1,10 @@
 #!/bin/sh
 readonly USAGE=\
 "NAME
-    $(basename "$0") -- create tiny, bootable stress test USB
+    $(basename -- "$0") -- create tiny, bootable stress test USB
 
 SYNOPSIS
-    $(basename "$0") [-h] [-l <directory>] <device>
+    $(basename -- "$0") [-h] [-l <directory>] <device>
 
 DESCRIPTION
     Tool to create a bootable USB device, including a minimal Tiny Core Linux
@@ -21,11 +21,11 @@ OPTIONS
     <device>          USB device to use (/dev/ may be omitted)
 
 EXAMPLES
-    $(basename "$0") sda
+    $(basename -- "$0") sda
 
-    $(basename "$0") -l . /dev/sdb
+    $(basename -- "$0") -l . /dev/sdb
 
-    $(basename "$0") -l ~/logs sdc"
+    $(basename -- "$0") -l ~/logs sdc"
 
 ########################################
 # Show help text.
@@ -70,32 +70,21 @@ if [ -z "$1" ]; then
   exit 2
 fi
 
-readonly SCRIPT_DIR="$(dirname "$0")"
-
 # include script dir in path
+readonly SCRIPT_DIR="$(dirname -- "$0")"
 PATH="${SCRIPT_DIR}:${PATH}"
 
 # check required software packages
 readonly DEPENDENCIES="
-basename
 blkid
-cp
-date
-dirname
-git
-grep
 grub-install
-ln
 lsblk
 md5sum
-mkdir
 mkfs.fat
 mkfs.ext2
-mksquashfs
 mount
 partprobe
 sed
-tee
 wget"
 
 # shellcheck disable=SC2086
@@ -247,12 +236,12 @@ mount_file_systems() {
 #   Destination file.
 ########################################
 download_file() {
-    cd "$(dirname "$2")" || exit 2
+    cd "$(dirname -- "$2")" || exit 2
     wget \
       --quiet \
       --continue \
       --show-progress \
-      --output-document="$(basename "$2")" \
+      --output-document="$(basename -- "$2")" \
       "$1"
     cd "${WORK_DIR}" || exit 2
 }
@@ -270,8 +259,8 @@ download_and_validate_tiny_core_component() {
     download_file "$1"         "$2"
     download_file "$1.md5.txt" "$2.md5.txt"
 
-    cd "$(dirname "$2")" || exit 2
-    md5sum --check "$(basename "$2").md5.txt"
+    cd "$(dirname -- "$2")" || exit 2
+    md5sum --check "$(basename -- "$2").md5.txt"
     validation_status="$?"
     cd "${WORK_DIR}" || exit 2
 

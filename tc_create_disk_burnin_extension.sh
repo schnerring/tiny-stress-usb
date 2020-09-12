@@ -1,13 +1,17 @@
 #!/bin/sh
 
+# include script dir in path
+readonly SCRIPT_DIR="$(dirname -- "$0")"
+PATH="${SCRIPT_DIR}:${PATH}"
+
 . "./logging.sh"
 
 readonly USAGE=\
 "NAME
-    $(basename "$0") -- create Tiny Core Linux disk burn-in extension
+    $(basename -- "$0") -- create Tiny Core Linux disk burn-in extension
 
 SYNOPSIS
-    $(basename "$0") [-h] [-o <directory>]
+    $(basename -- "$0") [-h] [-o <directory>]
 
 DESCRIPTION
     Creates a Tiny Core Linux disk burn-in extension. It's just a wrapper for:
@@ -20,11 +24,11 @@ OPTIONS
                     (default: $(pwd))
 
 EXAMPLES
-    $(basename "$0")
+    $(basename -- "$0")
 
-    $(basename "$0") -o .
+    $(basename -- "$0") -o .
 
-    $(basename "$0") -o /tmp"
+    $(basename -- "$0") -o /tmp"
 
 ########################################
 # Display help text.
@@ -57,6 +61,8 @@ while getopts ':ho:' option; do
         ;;
   esac
 done
+
+ensure_dependencies.sh git mksquashfs || exit "$?"
 
 readonly WORK_DIR="$(pwd)"
 

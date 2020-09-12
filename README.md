@@ -19,18 +19,11 @@ Most inspiring were the following resources, found in the iXsystems Community's 
 * POSIX compatible shell
 * Must be run as `root`
 * Required software packages:
-  * `basename`
   * `blkid` to query partition UUID
-  * `cp`
-  * `date`: timestamps for logging
-  * `dirname`
   * `git`: clone repositories
-  * `grep`
   * `grub-install` to install GRUB
-  * `ln`: create symbolic links
   * `lsblk` to check if USB device
   * `md5sum` to validate downloads
-  * `mkdir` to create directories
   * `mkfs.ext2` to create ext2 file system
   * `mkfs.fat` to create FAT32 file system
   * `mksquashfs` to package custom Tiny Core extensions
@@ -38,7 +31,6 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `partprobe` to re-read partition table
   * `sed` to search and replace in files
   * `sgdisk` for partitioning
-  * `tee` for file logging
   * `wget` to download software
 
 ## Bundled Tiny Core Extensions
