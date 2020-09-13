@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "util/common.sh"
+. util/common.sh
 
 readonly USAGE=\
 "NAME
@@ -70,7 +70,7 @@ if [ -z "$1" ]; then
   exit 2
 fi
 
-ensure_dependencies.sh blkid grub-install md5sum mount sed wget || exit "$?"
+ensure_dependencies.sh blkid grub-install mount sed || exit "$?"
 ensure_root_privileges.sh || exit "$?"
 
 ################################################################################
@@ -97,12 +97,6 @@ readonly PART_ROOT="${DEVICE}2" # e.g. /dev/sdc2
 # mount points
 readonly MNT_EFI="${MNT_DIR}${PART_EFI}" # e.g. ./tmp/mnt/dev/sdc1
 readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
-
-# Tiny Core Linux
-readonly TC_ARCH="x86_64"
-readonly TC_VERSION="11"
-readonly TC_SITE_URL="http://tinycorelinux.net/${TC_VERSION}.x/${TC_ARCH}"
-readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 
 ################################################################################
 # FUNCTIONS
@@ -198,111 +192,6 @@ mount_file_systems() {
 }
 
 ########################################
-# Download Tiny Core Linux component and validate its MD5 checksum.
-# Exit on checksum error.
-# Globals:
-#   WORK_DIR
-# Arguments:
-#   Download URL.
-#   Destination file.
-########################################
-download_and_validate_tiny_core_component() {
-    download_file "$1"         "$2"
-    download_file "$1.md5.txt" "$2.md5.txt"
-
-    cd "$(dirname -- "$2")" || exit 2
-    md5sum --check "$(basename -- "$2").md5.txt"
-    validation_status="$?"
-    cd "${WORK_DIR}" || exit 2
-
-    if [ "${validation_status}" -ne 0 ]; then
-      log_info "Checksum error" 2>&1
-      exit 2
-    fi
-}
-
-########################################
-# Download Tiny Core Linux core components.
-# Globals:
-#   DOWNLOAD_DIR
-#   TC_SITE_URL
-# Arguments:
-#   None
-########################################
-download_tiny_core() {
-    mkdir -p -- "${DOWNLOAD_DIR}/boot"
-
-    log_header "Downloading Tiny Core Linux"
-
-    download_and_validate_tiny_core_component \
-      "${TC_SITE_URL}/release/distribution_files/corepure64.gz" \
-      "${DOWNLOAD_DIR}/boot/corepure64.gz"
-
-    download_and_validate_tiny_core_component \
-      "${TC_SITE_URL}/release/distribution_files/vmlinuz64" \
-      "${DOWNLOAD_DIR}/boot/vmlinuz64"
-
-    log_info "Done"
-}
-
-########################################
-# Download Tiny Core Linux extension.
-# Globals:
-#   DOWNLOAD_DIR
-#   TC_SITE_URL
-# Arguments:
-#   Name of the extension, including the .tcz extension.
-########################################
-already_downloaded=""
-download_tiny_core_extension() {
-  [ -z "$1" ] && return 1
-
-  mkdir -p -- "${DOWNLOAD_DIR}/tce/optional"
-
-  log_info "Downloading: $1"
-
-  if printf '%s' "${already_downloaded}" | grep -q "$1"; then
-    log_info "Already downloaded: $1. Skipping."
-    return
-  fi
-
-  download_and_validate_tiny_core_component \
-    "${TC_SITE_URL}/tcz/$1" \
-    "${DOWNLOAD_DIR}/tce/optional/$1"
-
-  download_file \
-    "${TC_SITE_URL}/tcz/$1.dep" \
-    "${DOWNLOAD_DIR}/tce/optional/$1.dep"
-
-  already_downloaded="${already_downloaded} $1"
-
-  if [ -f "${DOWNLOAD_DIR}/tce/optional/$1.dep" ]; then
-    # download dependencies recursively
-    while read -r dependency; do
-      download_tiny_core_extension "${dependency}"
-    done < "${DOWNLOAD_DIR}/tce/optional/$1.dep"
-  fi
-
-  printf '%s\n' "$1" >> "${DOWNLOAD_DIR}/tce/onboot.lst"
-}
-
-########################################
-# Download Tiny Core Linux extensions.
-# Globals:
-#   DOWNLOAD_DIR
-#   TC_EXTENSIONS
-# Arguments:
-#   None
-########################################
-download_tiny_core_extensions() {
-  rm -f -- "${DOWNLOAD_DIR}/tce/onboot.lst"
-  for extension in ${TC_EXTENSIONS}; do
-    log_header "Downloading: ${extension}"
-    download_tiny_core_extension "${extension}.tcz"
-  done
-}
-
-########################################
 # Install downloaded Tiny Core Linux on root partition.
 # Globals:
 #   DOWNLOAD_DIR
@@ -371,8 +260,7 @@ main() {
     format_usb.sh "${DEVICE}"
   fi
   mount_file_systems
-  download_tiny_core
-  download_tiny_core_extensions
+  tc_download.sh -o "${DOWNLOAD_DIR}"
   tc_create_disk_burnin_extension.sh -o "${DOWNLOAD_DIR}/tce/optional"
   printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
   install_tiny_core
@@ -380,5 +268,4 @@ main() {
   #teardown # TODO
 }
 
-# entrypoint
 main "$@"

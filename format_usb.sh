@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "util/common.sh"
+. util/common.sh
 
 readonly USAGE=\
 "NAME
@@ -66,6 +66,7 @@ fi
 
 ensure_dependencies.sh lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount \
   || exit "$?"
+ensure_root_privileges.sh || exit "$?"
 
 DEVICE="$1"
 

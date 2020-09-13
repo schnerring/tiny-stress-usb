@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "util/common.sh"
+. util/common.sh
 
 readonly USAGE=\
 "NAME
@@ -45,7 +45,7 @@ while getopts ':ho:' option; do
     h)  show_help
         exit 0
         ;;
-    o)  OUT_DIR="${OPTARG}"
+    o)  readonly OUT_DIR="${OPTARG}"
         ;;
     :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
         show_help >&2
@@ -61,8 +61,7 @@ done
 ensure_dependencies.sh git mksquashfs || exit "$?"
 
 # output directory
-[ -z "${OUT_DIR}" ] && OUT_DIR="${WORK_DIR}"
-readonly OUT_DIR
+[ -z "${OUT_DIR}" ] && readonly OUT_DIR="${WORK_DIR}"
 
 # base directory of extension
 readonly EXT_DIR="${TMP_DIR}/disk-burnin"
