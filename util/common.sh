@@ -1,4 +1,10 @@
 #!/bin/sh
+# Commonly shared constants and functions.
+# WARNING: this script is only to be sourced, not executed!
+
+################################################################################
+# CONSTANTS
+################################################################################
 
 # common directories
 readonly SCRIPT_DIR="$(dirname -- "$0")"; export SCRIPT_DIR
@@ -13,6 +19,10 @@ readonly FS_LABEL_HOME=tiny_stress_home;  export FS_LABEL_HOME
 
 # include script and utilities directory in PATH
 PATH="${SCRIPT_DIR}:${SCRIPT_DIR}/util:${PATH}"
+
+################################################################################
+# FUNCTIONS
+################################################################################
 
 ##################################################
 # Log informational message.
@@ -56,4 +66,17 @@ log_header()
 delete_log() {
   log_info "Deleting Log ${LOG_FILE} ..."
   rm -- "${LOG_FILE}" || exit 1
+}
+
+########################################
+# Show help text.
+# Globals:
+#   USAGE
+# Arguments:
+#   None
+# Outputs:
+#   Write help text to stdout.
+########################################
+show_help() {
+  printf '%s\n' "${USAGE}"
 }

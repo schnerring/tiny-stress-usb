@@ -31,19 +31,6 @@ EXAMPLES
 
     $(basename -- "$0") -o /tmp"
 
-########################################
-# Display help text.
-# Globals:
-#   USAGE
-# Arguments:
-#   None
-# Outputs:
-#   Write help text to stdout.
-########################################
-show_help() {
-  printf '%s\n' "${USAGE}"
-}
-
 # parse options
 while getopts ':ha:v:o:' option; do
   case "${option}" in

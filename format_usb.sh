@@ -27,19 +27,6 @@ EXAMPLES
 
     $(basename -- "$0") /dev/sdd"
 
-########################################
-# Display help text.
-# Globals:
-#   USAGE
-# Arguments:
-#   None
-# Outputs:
-#   Write help text to stdout.
-########################################
-show_help() {
-  printf '%s\n' "${USAGE}"
-}
-
 # parse options
 while getopts ':hy' option; do
   case "${option}" in

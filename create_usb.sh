@@ -29,19 +29,6 @@ EXAMPLES
 
     $(basename -- "$0") -cy sdc"
 
-########################################
-# Show help text.
-# Globals:
-#   USAGE
-# Arguments:
-#   None
-# Outputs:
-#   Write help text to stdout.
-########################################
-show_help() {
-  printf '%s\n' "${USAGE}"
-}
-
 # parse options
 while getopts ':hcy' option; do
   case "${option}" in
