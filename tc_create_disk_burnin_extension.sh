@@ -75,6 +75,7 @@ readonly GIT_REPO_URL="https://github.com/Spearfoot/${GIT_REPO_NAME}.git"
 
 log_header "Creating Disk Burn-In Extension"
 
+rm -rf -- "${EXT_DIR}" || exit 1
 mkdir -p -- "${BIN_DIR}" || exit 1
 
 log_info "Downloading: ${GIT_REPO_URL} ..."
@@ -101,8 +102,5 @@ mksquashfs \
   -no-xattrs \
   -noappend \
   -quiet || exit 1
-
-log_info "Cleaning up ..."
-rm -rf -- "${EXT_DIR}" || exit 1
 
 log_info "Done."

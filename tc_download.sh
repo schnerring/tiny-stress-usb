@@ -117,7 +117,7 @@ download_file() {
 #   Download URL.
 #   Destination file.
 ########################################
-download_and_validate_tiny_core_component() {
+download_and_validate_component() {
     download_file "$1"         "$2"
     download_file "$1.md5.txt" "$2.md5.txt"
 
@@ -140,20 +140,20 @@ download_and_validate_tiny_core_component() {
 # Arguments:
 #   None
 ########################################
-download_tiny_core() {
+download_base() {
     mkdir -p -- "${OUT_DIR}/boot"
 
     log_header "Downloading Tiny Core Linux"
 
-    download_and_validate_tiny_core_component \
+    download_and_validate_component \
       "${SITE_URL}/release/distribution_files/corepure64.gz" \
       "${OUT_DIR}/boot/corepure64.gz"
 
-    download_and_validate_tiny_core_component \
+    download_and_validate_component \
       "${SITE_URL}/release/distribution_files/vmlinuz64" \
       "${OUT_DIR}/boot/vmlinuz64"
 
-    log_info "Done"
+    log_info "Done."
 }
 
 ########################################
@@ -165,7 +165,7 @@ download_tiny_core() {
 #   Name of the extension, including the .tcz extension.
 ########################################
 already_downloaded=""
-download_tiny_core_extension() {
+download_extension() {
   [ -z "$1" ] && return 1
 
   mkdir -p -- "${OUT_DIR}/tce/optional"
@@ -177,7 +177,7 @@ download_tiny_core_extension() {
     return
   fi
 
-  download_and_validate_tiny_core_component \
+  download_and_validate_component \
     "${SITE_URL}/tcz/$1" \
     "${OUT_DIR}/tce/optional/$1"
 
@@ -190,7 +190,7 @@ download_tiny_core_extension() {
   if [ -f "${OUT_DIR}/tce/optional/$1.dep" ]; then
     # download dependencies recursively
     while read -r dependency; do
-      download_tiny_core_extension "${dependency}"
+      download_extension "${dependency}"
     done < "${OUT_DIR}/tce/optional/$1.dep"
   fi
 
@@ -205,11 +205,12 @@ download_tiny_core_extension() {
 # Arguments:
 #   None
 ########################################
-download_tiny_core_extensions() {
+download_extensions() {
   rm -f -- "${OUT_DIR}/tce/onboot.lst"
   for extension in ${EXTENSIONS}; do
     log_header "Downloading: ${extension}"
-    download_tiny_core_extension "${extension}.tcz"
+    download_extension "${extension}.tcz"
+    log_info "Done."
   done
 }
 
@@ -219,8 +220,8 @@ download_tiny_core_extensions() {
 #   None
 ########################################
 main() {
-  download_tiny_core
-  download_tiny_core_extensions
+  download_base
+  download_extensions
 }
 
 main "$@"
