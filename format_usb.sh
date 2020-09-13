@@ -66,9 +66,8 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-ensure_dependencies.sh \
-  lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount || exit "$?"
-
+ensure_dependencies.sh lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount \
+  || exit "$?"
 ensure_root_privileges.sh || exit "$?"
 
 DEVICE="$1"
@@ -202,7 +201,7 @@ create_file_systems() {
   log_info "Done."
 
   log_header "Creating ext2 File System On Root Partition"
-  if ! mkfs.ext2 -F "${DEVICE}2"; then # e.g. /dev/sdc2
+  if ! mkfs.ext2 -F "${DEVICE}2" -L tiny_stress_usb; then # e.g. /dev/sdc2
     log_info "Failed" >&2
     exit 1
   fi

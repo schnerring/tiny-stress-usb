@@ -54,11 +54,11 @@ while getopts ':hcy' option; do
         ;;
     :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
         show_help >&2
-        exit 2
+        exit 1
         ;;
    \?)  printf 'Illegal option: -%s\n\n' "${OPTARG}" >&2
         show_help >&2
-        exit 2
+        exit 1
         ;;
   esac
 done
@@ -67,11 +67,11 @@ shift $(( OPTIND - 1 ))
 if [ -z "$1" ]; then
   printf 'Missing option: <device>\n\n' >&2
   show_help >&2
-  exit 2
+  exit 1
 fi
 
-ensure_dependencies.sh blkid grub-install mount sed || exit "$?"
-ensure_root_privileges.sh || exit "$?"
+ensure_dependencies.sh mount  || exit "$?"
+ensure_root_privileges.sh     || exit "$?"
 
 ################################################################################
 # CONSTANTS
@@ -194,33 +194,6 @@ install_tiny_core() {
 }
 
 ########################################
-# Install GRUB 2 bootloader on EFI partition.
-# Globals:
-#   MNT_EFI
-#   PART_ROOT
-#   WORK_DIR
-# Arguments:
-#   None
-########################################
-install_grub() {
-  log_header "Installing GRUB 2"
-
-  # TODO support legacy BIOS
-  grub-install \
-    --target=x86_64-efi \
-    --boot-directory="${MNT_EFI}/EFI/BOOT" \
-    --efi-directory="${MNT_EFI}" \
-    --removable
-
-  cp -- "${WORK_DIR}/grub.template.cfg" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
-
-  uuid="$(blkid --match-tag UUID --output value "${PART_ROOT}")"
-  sed -i "s/<uuid>/${uuid}/g" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
-
-  log_info "Done."
-}
-
-########################################
 # Unmount the device and delete temporary directory.
 # Globals:
 #   CLEAN_UP
@@ -251,7 +224,7 @@ main() {
   tc_create_disk_burnin_extension.sh -o "${DOWNLOAD_DIR}/tce/optional"
   printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
   install_tiny_core
-  install_grub
+  install_grub.sh "${MNT_EFI}"
   #teardown # TODO
 }
 
