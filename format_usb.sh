@@ -13,6 +13,8 @@ DESCRIPTION
     Format USB device, so Tiny Core Linux can be installed. Creates an EFI and
     root partition.
 
+    ALL DATA ON <device> WILL BE LOST!
+
 OPTIONS
     -h              Show help text
     -y              Automatic yes to prompts
@@ -64,8 +66,9 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-ensure_dependencies.sh lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount \
-  || exit "$?"
+ensure_dependencies.sh \
+  lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount || exit "$?"
+
 ensure_root_privileges.sh || exit "$?"
 
 DEVICE="$1"
@@ -119,6 +122,7 @@ unmount_partitions() {
   log_info "Unmounting partitions in ${SLEEP_BEFORE_UNMOUNT} seconds"
   sleep "${SLEEP_BEFORE_UNMOUNT}"
   umount --quiet "${DEVICE}"?* 2> /dev/null
+  return 0
 }
 
 ########################################
@@ -217,7 +221,6 @@ main() {
   wipe_partitions
   create_partitions
   create_file_systems
-  return 0
 }
 
 main "$@"

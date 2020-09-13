@@ -60,7 +60,7 @@ done
 
 ensure_dependencies.sh git mksquashfs || exit "$?"
 
-# output directory
+# default output directory
 [ -z "${OUT_DIR}" ] && readonly OUT_DIR="${WORK_DIR}"
 
 # base directory of extension
@@ -93,7 +93,7 @@ ln -s "${GIT_REPO_NAME}/disk-burnin.sh" "disk-burnin"
 
 cd -- "${WORK_DIR}" || exit 1
 
-log_info "Packaging extension ..."
+log_info "Packaging: ${OUT_DIR}/disk-burnin.tcz ..."
 
 mksquashfs \
   "${EXT_DIR}" \

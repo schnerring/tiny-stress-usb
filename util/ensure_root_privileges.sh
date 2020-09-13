@@ -7,10 +7,6 @@
 # Outputs:
 #   Write error to stderr.
 ########################################
-main() {
-  [ "$(id -u)" -eq 0 ] && exit 0
-  printf 'Must run as root\n' >&2
-  exit 1
-}
-
-main "$@"
+[ "$(id -u)" -eq 0 ] && exit 0
+printf 'Must run as root\n' >&2
+exit 1
