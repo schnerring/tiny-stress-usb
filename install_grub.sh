@@ -64,17 +64,17 @@ ensure_root_privileges.sh           || exit "$?"
 INSTALL_DIR="$1"
 
 readonly GRUB_CFG=\
-'loadfont unicode
+"loadfont unicode
 insmod all_video
 set gfxterm_font=unicode
 terminal_output gfxterm
 
-search --no-floppy --label --set=root tiny_stress_usb
+search --no-floppy --label --set=root ${FS_LABEL_ROOT}
 
-menuentry "Tiny Stress USB" {
-    linux /boot/vmlinuz64 quiet text waitusb=5 tce=LABEL="tiny_stress_usb/tce"
+menuentry \"Tiny Stress USB\" {
+    linux /boot/vmlinuz64 quiet text waitusb=5 tce=LABEL=\"${FS_LABEL_ROOT}/tce\"
     initrd /boot/corepure64.gz
-}'
+}"
 
 log_header "Installing GRUB 2"
 

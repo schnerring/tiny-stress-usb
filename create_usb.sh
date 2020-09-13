@@ -215,16 +215,16 @@ main() {
   show_runtime_info
   ensure_directories
   if [ "${AUTO_CONFIRM}" = true ]; then
-    format_usb.sh -y "${DEVICE}"
+    format_usb.sh -y "${DEVICE}" || exit 1
   else
-    format_usb.sh "${DEVICE}"
+    format_usb.sh "${DEVICE}" || exit 1
   fi
   mount_file_systems
-  tc_download.sh -o "${DOWNLOAD_DIR}"
-  tc_create_disk_burnin_extension.sh -o "${DOWNLOAD_DIR}/tce/optional"
+  tc_download.sh -o "${DOWNLOAD_DIR}" || exit 1
+  tc_create_disk_burnin_extension.sh -o "${DOWNLOAD_DIR}/tce/optional" || exit 1
   printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
   install_tiny_core
-  install_grub.sh "${MNT_EFI}"
+  install_grub.sh "${MNT_EFI}" || exit 1
   #teardown # TODO
 }
 

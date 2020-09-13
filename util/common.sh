@@ -6,6 +6,11 @@ readonly WORK_DIR="$(pwd)";               export WORK_DIR
 readonly TMP_DIR="/tmp/tiny_stress_usb";  export TMP_DIR
 readonly LOG_FILE="${WORK_DIR}/log.txt";  export LOG_FILE
 
+# file system labels
+# 16 chars max length
+readonly FS_LABEL_ROOT=tiny_stress_root;  export FS_LABEL_ROOT
+readonly FS_LABEL_HOME=tiny_stress_home;  export FS_LABEL_HOME
+
 # include script and utilities directory in PATH
 PATH="${SCRIPT_DIR}:${SCRIPT_DIR}/util:${PATH}"
 
