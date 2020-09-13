@@ -143,16 +143,16 @@ download_and_validate_component() {
 download_base() {
     mkdir -p -- "${OUT_DIR}/boot"
 
-    log_header "Downloading Tiny Core Linux"
-
+    log_header "Downloading corepure64 ..."
     download_and_validate_component \
       "${SITE_URL}/release/distribution_files/corepure64.gz" \
       "${OUT_DIR}/boot/corepure64.gz"
+    log_info "Done."
 
+    log_header "Downloading vmlinuz64 ..."
     download_and_validate_component \
       "${SITE_URL}/release/distribution_files/vmlinuz64" \
       "${OUT_DIR}/boot/vmlinuz64"
-
     log_info "Done."
 }
 
@@ -216,10 +216,21 @@ download_extensions() {
 
 ########################################
 # Main function of script.
+# Globals:
+#   ARCH
+#   VERSION
+#   SITE_URL
+#   EXTENSIONS
 # Arguments:
 #   None
 ########################################
 main() {
+  log_header "Downloading Tiny Core Linux ..."
+  log_info "Architecture: ${ARCH}"
+  log_info "Version:      ${VERSION}"
+  log_info "Site URL:     ${SITE_URL}"
+  log_info "Extensions:   ${EXTENSIONS}"
+
   download_base
   download_extensions
 }

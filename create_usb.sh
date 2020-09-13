@@ -115,10 +115,6 @@ readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
 #   PART_ROOT
 #   MNT_EFI
 #   MNT_ROOT
-#   TC_ARCH
-#   TC_VERSION
-#   TC_SITE_URL
-#   TC_EXTENSIONS
 #   AUTO_CONFIRM
 #   CLEAN_UP
 # Arguments:
@@ -127,6 +123,7 @@ readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
 show_runtime_info() {
   log_header "Device Information"
   log_info "Device:         ${DEVICE}"
+  log_info "Bus Connection: ${BUS_CONNECTION}"
 
   log_header "Common Directories"
   log_info "Working:        ${WORK_DIR}"
@@ -141,12 +138,6 @@ show_runtime_info() {
   log_header "Root Partition"
   log_info "Partition:      ${PART_ROOT}"
   log_info "Mount Point:    ${MNT_ROOT}"
-
-  log_header "Tiny Core Linux"
-  log_info "Architecture:   ${TC_ARCH}"
-  log_info "Version:        ${TC_VERSION}"
-  log_info "Site URL:       ${TC_SITE_URL}"
-  log_info "Extensions:     ${TC_EXTENSIONS}"
 
   log_header "Other"
   log_info "Auto-Confirm:   ${AUTO_CONFIRM}"
