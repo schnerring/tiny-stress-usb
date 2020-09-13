@@ -121,10 +121,6 @@ readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
 #   None
 ########################################
 show_runtime_info() {
-  log_header "Device Information"
-  log_info "Device:         ${DEVICE}"
-  log_info "Bus Connection: ${BUS_CONNECTION}"
-
   log_header "Common Directories"
   log_info "Working:        ${WORK_DIR}"
   log_info "Temporary:      ${TMP_DIR}"
@@ -162,7 +158,7 @@ ensure_directories() {
   mkdir -p -- "${MNT_EFI}"
   mkdir -p -- "${MNT_ROOT}"
 
-  log_info "Done"
+  log_info "Done."
 }
 
 ########################################
@@ -179,7 +175,7 @@ mount_file_systems() {
   log_header "Mounting File Systems"
   mount "${PART_EFI}" "${MNT_EFI}"
   mount "${PART_ROOT}" "${MNT_ROOT}"
-  log_info "Done"
+  log_info "Done."
 }
 
 ########################################
@@ -194,7 +190,7 @@ install_tiny_core() {
   log_header "Installing Tiny Core Linux"
   cp --recursive -- "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
   cp --recursive -- "${DOWNLOAD_DIR}/tce" "${MNT_ROOT}"
-  log_info "Done"
+  log_info "Done."
 }
 
 ########################################
@@ -221,7 +217,7 @@ install_grub() {
   uuid="$(blkid --match-tag UUID --output value "${PART_ROOT}")"
   sed -i "s/<uuid>/${uuid}/g" "${MNT_EFI}/EFI/BOOT/grub/grub.cfg"
 
-  log_info "Done"
+  log_info "Done."
 }
 
 ########################################

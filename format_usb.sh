@@ -156,7 +156,7 @@ wipe_partitions() {
     exit 1
   fi
 
-  log_info "Done"
+  log_info "Done."
 }
 
 ########################################
@@ -174,14 +174,14 @@ create_partitions() {
     log_info "Failed" >&2
     exit 1
   fi
-  log_info "Done"
+  log_info "Done."
 
   log_header "Creating Root Partition"
   if ! sgdisk --new 2:0:0 "${DEVICE}"; then
     log_info "Failed" >&2
     exit 1
   fi
-  log_info "Done"
+  log_info "Done."
 }
 
 ########################################
@@ -199,14 +199,14 @@ create_file_systems() {
     log_info "Failed" >&2
     exit 1
   fi
-  log_info "Done"
+  log_info "Done."
 
   log_header "Creating ext2 File System On Root Partition"
   if ! mkfs.ext2 -F "${DEVICE}2"; then # e.g. /dev/sdc2
     log_info "Failed" >&2
     exit 1
   fi
-  log_info "Done"
+  log_info "Done."
 
   unmount_partitions
 }
@@ -217,6 +217,10 @@ create_file_systems() {
 #   None
 ########################################
 main() {
+  log_header "Format USB device"
+  log_info "Device:         ${DEVICE}"
+  log_info "Bus Connection: ${BUS_CONNECTION}"
+
   confirmation_prompt
   wipe_partitions
   create_partitions
