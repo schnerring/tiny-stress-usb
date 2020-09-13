@@ -46,7 +46,7 @@ show_help() {
 while getopts ':hcy' option; do
   case "${option}" in
     h)  show_help
-        exit
+        exit 0
         ;;
     c)  readonly CLEAN_UP=true
         ;;
@@ -87,7 +87,6 @@ fi
 readonly DEVICE
 
 # common directories
-readonly TMP_DIR="${WORK_DIR}/tmp"
 readonly MNT_DIR="${TMP_DIR}/mnt"
 readonly DOWNLOAD_DIR="${TMP_DIR}/downloads"
 
@@ -173,25 +172,12 @@ show_runtime_info() {
 ensure_directories() {
   log_header "Creating Directories"
 
-  mkdir -p -- "${TMP_DIR}"
   mkdir -p -- "${MNT_DIR}"
   mkdir -p -- "${DOWNLOAD_DIR}"
   mkdir -p -- "${MNT_EFI}"
   mkdir -p -- "${MNT_ROOT}"
 
   log_info "Done"
-}
-
-########################################
-# Delete temporary directory.
-# Globals:
-#   TMP_DIR
-# Arguments:
-#   None
-########################################
-delete_temporary_directory() {
-  log_info "Deleting Temporary Directory"
-  rm -rf "${TMP_DIR}"
 }
 
 ########################################
@@ -209,25 +195,6 @@ mount_file_systems() {
   mount "${PART_EFI}" "${MNT_EFI}"
   mount "${PART_ROOT}" "${MNT_ROOT}"
   log_info "Done"
-}
-
-########################################
-# Download file.
-# Globals:
-#   WORK_DIR
-# Arguments:
-#   Download URL.
-#   Destination file.
-########################################
-download_file() {
-    cd "$(dirname -- "$2")" || exit 2
-    wget \
-      --quiet \
-      --continue \
-      --show-progress \
-      --output-document="$(basename -- "$2")" \
-      "$1"
-    cd "${WORK_DIR}" || exit 2
 }
 
 ########################################
@@ -385,10 +352,9 @@ install_grub() {
 #   None
 ########################################
 teardown() {
-  [ "${CLEAN_UP}" != true ] && exit
+  [ "${CLEAN_UP}" != true ] && exit 0
   log_header "Cleaning Up"
   unmount_partitions # TODO unknown
-  delete_temporary_directory
 }
 
 ########################################
@@ -415,4 +381,4 @@ main() {
 }
 
 # entrypoint
-main
+main "$@"

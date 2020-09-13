@@ -43,7 +43,7 @@ show_help() {
 while getopts ':ho:' option; do
   case "${option}" in
     h)  show_help
-        exit
+        exit 0
         ;;
     o)  OUT_DIR="${OPTARG}"
         ;;
@@ -65,7 +65,7 @@ ensure_dependencies.sh git mksquashfs || exit "$?"
 readonly OUT_DIR
 
 # base directory of extension
-readonly EXT_DIR="/tmp/disk-burnin"
+readonly EXT_DIR="${TMP_DIR}/disk-burnin"
 
 # mirror resulting file system tree in Tiny Core Linux
 readonly BIN_DIR="${EXT_DIR}/usr/local/bin"

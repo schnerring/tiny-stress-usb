@@ -42,7 +42,7 @@ show_help() {
 while getopts ':hy' option; do
   case "${option}" in
     h)  show_help
-        exit
+        exit 0
         ;;
     y)  readonly AUTO_CONFIRM=true
         ;;
@@ -102,7 +102,7 @@ confirmation_prompt() {
   read -r
 
   if ! printf '%s' "${REPLY}" | grep -q "^[Yy]$"; then
-    exit
+    exit 0
   fi
 }
 
