@@ -7,7 +7,7 @@ readonly USAGE=\
     $(basename -- "$0") -- create tiny, bootable stress test USB
 
 SYNOPSIS
-    $(basename -- "$0") [-h] [-c] [-y] <device>
+    $(basename -- "$0") [-h] [-c] [-u] [-y] <device>
 
 DESCRIPTION
     Tool to create a bootable USB device, including a minimal Tiny Core Linux
@@ -17,8 +17,9 @@ DESCRIPTION
 
 OPTIONS
     -h                Show help text
-    -c                Clean up after the program succeeds. Delete temporary
-                      directory and unmount the device.
+    -c                Clean up after program succeeds. Unmount device and delete
+                      temporary directory.
+    -u                Unmount device after program succeeds
     -y                Automatic yes to prompts
     <device>          USB device to use (/dev/ may be omitted)
 
@@ -29,12 +30,14 @@ EXAMPLES
 
     $(basename -- "$0") -cy sdc"
 
-while getopts ':hcy' option; do
+while getopts ':hcuy' option; do
   case "${option}" in
     h)  show_help
         exit 0
         ;;
     c)  readonly CLEAN_UP=true
+        ;;
+    u)  readonly UNMOUNT=true
         ;;
     y)  readonly AUTO_CONFIRM="-y"
         ;;
@@ -60,7 +63,7 @@ ensure_root_privileges.sh     || exit "$?"
 
 readonly DEVICE="$1"
 
-format_usb.sh "${AUTO_CONFIRM}" "${DEVICE}" \
+format_usb.sh ${AUTO_CONFIRM} "${DEVICE}" \
   || log_error "Format failed: ${DEVICE}"
 
 mkdir -p -- "${TMP_DIR}/mnt/efi" \
@@ -91,5 +94,11 @@ cp -r -- "${TMP_DIR}/downloads/boot" "${TMP_DIR}/mnt/root" \
 cp -r -- "${TMP_DIR}/downloads/tce" "${TMP_DIR}/mnt/root" \
   || log_error "Copy failed: ${TMP_DIR}/downloads/tce to ${TMP_DIR}/mnt/root"
 
-#[ "${CLEAN_UP}" != true ] && exit 0
-#unmount_partitions # TODO unknown
+if [ "${CLEAN_UP}" = true ]; then
+  unmount_partitions "${DEVICE}"
+  rm -rf -- "${TMP_DIR}"
+elif [ "${UNMOUNT}" = true ]; then
+  unmount_partitions "${DEVICE}"
+fi
+
+log_header "Completed."

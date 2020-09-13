@@ -69,6 +69,8 @@ if [ "${BUS_CONNECTION}" != "usb" ]; then
   exit 1
 fi
 
+# TODO check minimum size 256 MiB
+
 # Duration to wait before attempting to unmount the device.
 # Slow systems might take longer.
 readonly SLEEP_BEFORE_UNMOUNT=1 # TODO make configurable via option
@@ -86,35 +88,21 @@ confirmation_prompt() {
   printf 'Really continue? (y/n) '
   read -r
 
-  printf '%s' "${REPLY}" | grep -q "^[Yy]$" || exit 0
-}
-
-########################################
-# Unmount all device partitions.
-# The OS might auto-mount partitions in between steps which is why this function
-# is called repeatedly throughout the script.
-# Globals:
-#   DEVICE
-#   SLEEP_BEFORE_UNMOUNT
-########################################
-unmount_partitions() {
-  log_info "Unmounting partitions in ${SLEEP_BEFORE_UNMOUNT} seconds"
-  sleep "${SLEEP_BEFORE_UNMOUNT}"
-  umount --quiet "${DEVICE}"?* 2> /dev/null
-  return 0
+  printf '%s' "${REPLY}" | grep -q "^[Yy]$" || log_error "Format aborted."
 }
 
 ########################################
 # Inform OS about device's partition table changes.
 # Globals:
 #   DEVICE
+#   SLEEP_BEFORE_UNMOUNT
 ########################################
 read_partition_table() {
   # TODO
   # Investigate reported errors about not being able to inform the kernel
   # because it seems to be working.
   partprobe "${DEVICE}" 2> /dev/null
-  unmount_partitions
+  unmount_partitions "${DEVICE}" "${SLEEP_BEFORE_UNMOUNT}"
 }
 
 ########################################
@@ -126,16 +114,14 @@ read_partition_table() {
 ########################################
 wipe_partitions() {
   read_partition_table
-
   log_header "Wiping Partitions"
-
   # surpress warnings about having to re-read the partition table
   sgdisk --zap-all "${DEVICE}" 1> /dev/null || log_error "Failed."
   log_info "Done."
 }
 
 ########################################
-# Create EFI and root partitions.
+# Create EFI, root and home partitions.
 # Globals:
 #   DEVICE
 # Arguments:
@@ -161,6 +147,7 @@ create_partitions() {
 # Create file systems.
 # Globals:
 #   DEVICE
+#   SLEEP_BEFORE_UNMOUNT
 # Arguments:
 #   None
 ########################################
@@ -179,7 +166,7 @@ create_file_systems() {
   mkfs.ext2 -F "${DEVICE}3" -L "${FS_LABEL_HOME}" || log_error "Failed."
   log_info "Done."
 
-  unmount_partitions
+  unmount_partitions "${DEVICE}" "${SLEEP_BEFORE_UNMOUNT}"
 }
 
 ########################################

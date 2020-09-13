@@ -8,13 +8,13 @@ readonly WORK_DIR="$(pwd)";               export WORK_DIR
 readonly TMP_DIR="/tmp/tiny_stress_usb";  export TMP_DIR
 readonly LOG_FILE="${WORK_DIR}/log.txt";  export LOG_FILE
 
+# include script and utilities directory in PATH
+PATH="${SCRIPT_DIR}:${SCRIPT_DIR}/util:${PATH}"
+
 # file system labels
 # 16 chars max length
 readonly FS_LABEL_ROOT=tiny_stress_root;  export FS_LABEL_ROOT
 readonly FS_LABEL_HOME=tiny_stress_home;  export FS_LABEL_HOME
-
-# include script and utilities directory in PATH
-PATH="${SCRIPT_DIR}:${SCRIPT_DIR}/util:${PATH}"
 
 ##################################################
 # Log informational message.
@@ -84,4 +84,25 @@ delete_log() {
 ########################################
 show_help() {
   printf '%s\n' "${USAGE}"
+}
+
+########################################
+# Unmount all device partitions.
+# The OS might auto-mount partitions in between steps which is why this function
+# is called repeatedly throughout scripts.
+# Arguments:
+#   Device to unmount.
+#   Delay in seconds before unmount.
+########################################
+unmount_partitions() {
+  [ -z "$1" ] && log_error "Argument missing: device"
+  msg="Unmounting partitions of $1"
+  if [ -n "$2" ]; then
+    log_info "${msg} in $2 seconds"
+    sleep "$2"
+  else
+    log_info "${msg}"
+  fi
+  umount --quiet "$1"?* 2> /dev/null
+  return 0
 }
