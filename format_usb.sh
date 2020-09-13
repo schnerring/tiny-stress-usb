@@ -80,17 +80,13 @@ readonly SLEEP_BEFORE_UNMOUNT=1 # TODO make configurable via option
 #   DEVICE
 ########################################
 confirmation_prompt() {
-  if [ "${AUTO_CONFIRM}" = true ]; then
-    return
-  fi
+  [ "${AUTO_CONFIRM}" = true ] && return 0
 
   printf 'ALL DATA ON %s WILL BE LOST!\n' "${DEVICE}"
   printf 'Really continue? (y/n) '
   read -r
 
-  if ! printf '%s' "${REPLY}" | grep -q "^[Yy]$"; then
-    exit 0
-  fi
+  printf '%s' "${REPLY}" | grep -q "^[Yy]$" || exit 0
 }
 
 ########################################
@@ -134,11 +130,7 @@ wipe_partitions() {
   log_header "Wiping Partitions"
 
   # surpress warnings about having to re-read the partition table
-  if ! sgdisk --zap-all "${DEVICE}" 1> /dev/null; then
-    log_info "Failed" >&2
-    exit 1
-  fi
-
+  sgdisk --zap-all "${DEVICE}" 1> /dev/null || log_error "Failed."
   log_info "Done."
 }
 
@@ -153,24 +145,15 @@ create_partitions() {
   read_partition_table
 
   log_header "Creating EFI Partition"
-  if ! sgdisk --new 1:0:+100M --typecode 1:ef00 "${DEVICE}"; then
-    log_info "Failed" >&2
-    exit 1
-  fi
+  sgdisk --new 1:0:+100M --typecode 1:ef00 "${DEVICE}" || log_error "Failed."
   log_info "Done."
 
   log_header "Creating Root Partition"
-  if ! sgdisk --new 2:0:+40M "${DEVICE}"; then
-    log_info "Failed" >&2
-    exit 1
-  fi
+  sgdisk --new 2:0:+40M "${DEVICE}" || log_error "Failed."
   log_info "Done."
 
   log_header "Creating Home Partition"
-  if ! sgdisk --new 3:0:+100M "${DEVICE}"; then
-    log_info "Failed" >&2
-    exit 1
-  fi
+  sgdisk --new 3:0:+100M "${DEVICE}" || log_error "Failed."
   log_info "Done."
 }
 
@@ -185,24 +168,15 @@ create_file_systems() {
   read_partition_table
 
   log_header "Creating FAT32 File System On EFI Partition"
-  if ! mkfs.fat -F 32 "${DEVICE}1"; then # e.g. /dev/sdc1
-    log_info "Failed" >&2
-    exit 1
-  fi
+  mkfs.fat -F 32 "${DEVICE}1" || log_error "Failed."
   log_info "Done."
 
   log_header "Creating ext2 File System On Root Partition"
-  if ! mkfs.ext2 -F "${DEVICE}2" -L "${FS_LABEL_ROOT}"; then # e.g. /dev/sdc2
-    log_info "Failed" >&2
-    exit 1
-  fi
+  mkfs.ext2 -F "${DEVICE}2" -L "${FS_LABEL_ROOT}" || log_error "Failed."
   log_info "Done."
 
   log_header "Creating ext2 File System On Home Partition"
-  if ! mkfs.ext2 -F "${DEVICE}3" -L "${FS_LABEL_HOME}"; then # e.g. /dev/sdc3
-    log_info "Failed" >&2
-    exit 1
-  fi
+  mkfs.ext2 -F "${DEVICE}3" -L "${FS_LABEL_HOME}" || log_error "Failed."
   log_info "Done."
 
   unmount_partitions

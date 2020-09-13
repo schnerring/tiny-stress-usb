@@ -110,10 +110,7 @@ download_and_validate_component() {
     validation_status="$?"
     cd "${WORK_DIR}" || exit 1
 
-    if [ "${validation_status}" -ne 0 ]; then
-      log_info "Checksum error" >&2
-      exit 1
-    fi
+    [ "${validation_status}" -eq 0 ] || log_error "Checksum error"
 }
 
 ########################################
@@ -158,7 +155,7 @@ download_extension() {
 
   if printf '%s' "${already_downloaded}" | grep -q "$1"; then
     log_info "Already downloaded: $1. Skipping."
-    return
+    return 0
   fi
 
   download_and_validate_component \
