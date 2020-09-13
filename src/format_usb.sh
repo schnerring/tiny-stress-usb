@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. util/common.sh
+. "$(dirname -- "$0")/util/common.sh"
 
 readonly USAGE=\
 "NAME

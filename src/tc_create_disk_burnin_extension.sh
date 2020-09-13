@@ -6,7 +6,7 @@
 # USAGE
 #   ./tc_create_disk_burnin_extension.sh <directory>
 
-. util/common.sh
+. "$(dirname -- "$0")/util/common.sh"
 
 ensure_dependencies.sh git mksquashfs || exit "$?"
 

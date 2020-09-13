@@ -4,7 +4,7 @@
 # USAGE
 #   ./install_grub.sh <directory>
 
-. util/common.sh
+. "$(dirname -- "$0")/util/common.sh"
 
 if [ -z "$1" ]; then
   printf 'Missing option: install directory\n\n' >&2
