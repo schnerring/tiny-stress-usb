@@ -7,7 +7,7 @@ readonly USAGE=\
     $(basename -- "$0") -- download Tiny Core Linux
 
 SYNOPSIS
-    $(basename -- "$0") [-h] [-a <architecture>] [-v <version>] [-o <directory>]
+    $(basename -- "$0") [-h] [-a <architecture>] [-v <version>] [<directory>]
 
 DESCRIPTION
     Download Tiny Core Linux with extensions required for stress testing:
@@ -19,10 +19,10 @@ DESCRIPTION
       * systester-cli:  CPU stress testing
 
 OPTIONS
-    -h              Show help text
-    -a              Architecture: x86 or x86_64 (default: x86_64)
-    -v              Tiny Core Linux version (default: 11)
-    -o <directory>  Output directory (default: $(pwd))
+    -h            Show help text
+    -a            Architecture: x86 or x86_64 (default: x86_64)
+    -v            Tiny Core Linux version (default: 11)
+    <directory>   Output directory (default: $(pwd))
 
 EXAMPLES
     $(basename -- "$0")
@@ -31,8 +31,7 @@ EXAMPLES
 
     $(basename -- "$0") -o /tmp"
 
-# parse options
-while getopts ':ha:v:o:' option; do
+while getopts ':ha:v:' option; do
   case "${option}" in
     h)  show_help
         exit 0
@@ -40,8 +39,6 @@ while getopts ':ha:v:o:' option; do
     a)  readonly ARCH="${OPTARG}"
         ;;
     v)  readonly VERSION="${OPTARG}"
-        ;;
-    o)  readonly OUT_DIR="${OPTARG}"
         ;;
     :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
         show_help >&2
@@ -53,23 +50,23 @@ while getopts ':ha:v:o:' option; do
         ;;
   esac
 done
+shift $(( OPTIND - 1 ))
 
 ensure_dependencies.sh md5sum wget || exit "$?"
 
-################################################################################
-# CONSTANTS
-################################################################################
+if [ -z "$1" ]; then
+  # default output directory
+  readonly OUT_DIR="${WORK_DIR}"
+else
+  readonly OUT_DIR="$1"
+fi
 
+# default options
 [ -z "${ARCH}" ]    && readonly ARCH="x86_64"
 [ -z "${VERSION}" ] && readonly VERSION="11"
-[ -z "${OUT_DIR}" ] && readonly OUT_DIR="${WORK_DIR}"
 
 readonly SITE_URL="http://tinycorelinux.net/${VERSION}.x/${ARCH}"
 readonly EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
-
-################################################################################
-# FUNCTIONS
-################################################################################
 
 ########################################
 # Download file.

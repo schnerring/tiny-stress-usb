@@ -29,7 +29,6 @@ EXAMPLES
 
     $(basename -- "$0") -cy sdc"
 
-# parse options
 while getopts ':hcy' option; do
   case "${option}" in
     h)  show_help
@@ -60,10 +59,6 @@ fi
 ensure_dependencies.sh mount  || exit "$?"
 ensure_root_privileges.sh     || exit "$?"
 
-################################################################################
-# CONSTANTS
-################################################################################
-
 DEVICE="$1"
 
 # TODO duplicate
@@ -84,10 +79,6 @@ readonly PART_ROOT="${DEVICE}2" # e.g. /dev/sdc2
 # mount points
 readonly MNT_EFI="${MNT_DIR}${PART_EFI}" # e.g. ./tmp/mnt/dev/sdc1
 readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
-
-################################################################################
-# FUNCTIONS
-################################################################################
 
 ########################################
 # Show runtime information.
@@ -125,7 +116,6 @@ show_runtime_info() {
   log_header "Other"
   log_info "Auto-Confirm:   ${AUTO_CONFIRM}"
   log_info "Clean Up:       ${CLEAN_UP}"
-
 }
 
 ########################################
@@ -207,8 +197,8 @@ main() {
     format_usb.sh "${DEVICE}" || exit 1
   fi
   mount_file_systems
-  tc_download.sh -o "${DOWNLOAD_DIR}" || exit 1
-  tc_create_disk_burnin_extension.sh -o "${DOWNLOAD_DIR}/tce/optional" || exit 1
+  tc_download.sh "${DOWNLOAD_DIR}" || exit 1
+  tc_create_disk_burnin_extension.sh "${DOWNLOAD_DIR}/tce/optional" || exit 1
   printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
   install_tiny_core
   install_grub.sh "${MNT_EFI}" || exit 1

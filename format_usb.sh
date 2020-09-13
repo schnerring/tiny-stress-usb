@@ -10,10 +10,15 @@ SYNOPSIS
     $(basename -- "$0") [-h] [-y] <device>
 
 DESCRIPTION
-    Format USB device, so Tiny Core Linux can be installed. Creates an EFI and
-    root partition.
+    Format USB device, so Tiny Core Linux can be installed.
 
     ALL DATA ON <device> WILL BE LOST!
+
+    Partitioning layout:
+
+      * EFI Partition   FAT32 100M
+      * Root Partition  ext2   40M
+      * Home Partition  ext2  100M
 
 OPTIONS
     -h              Show help text
@@ -27,7 +32,6 @@ EXAMPLES
 
     $(basename -- "$0") /dev/sdd"
 
-# parse options
 while getopts ':hy' option; do
   case "${option}" in
     h)  show_help
@@ -53,8 +57,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-ensure_dependencies.sh lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount \
-  || exit "$?"
+ensure_dependencies.sh lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount || exit "$?"
 ensure_root_privileges.sh || exit "$?"
 
 DEVICE="$1"
@@ -74,7 +77,7 @@ fi
 
 # Duration to wait before attempting to unmount the device.
 # Slow systems might take longer.
-readonly SLEEP_BEFORE_UNMOUNT=1
+readonly SLEEP_BEFORE_UNMOUNT=1 # TODO make configurable via option
 
 ########################################
 # Prompts for user confirmation.

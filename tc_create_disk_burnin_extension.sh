@@ -1,54 +1,21 @@
 #!/bin/sh
+# Create Tiny Core disk burn-in extension and output to specified directory.
+#
+# Wraps https://github.com/Spearfoot/disk-burnin-and-testing
+#
+# USAGE
+#   ./tc_create_disk_burnin_extension.sh <directory>
 
 . util/common.sh
 
-readonly USAGE=\
-"NAME
-    $(basename -- "$0") -- create Tiny Core Linux disk burn-in extension
-
-SYNOPSIS
-    $(basename -- "$0") [-h] [-o <directory>]
-
-DESCRIPTION
-    Creates a Tiny Core Linux disk burn-in extension. It's just a wrapper for:
-
-    https://github.com/Spearfoot/disk-burnin-and-testing
-
-OPTIONS
-    -h              Show help text
-    -o <directory>  Output directory where packaged extension is put.
-                    (default: $(pwd))
-
-EXAMPLES
-    $(basename -- "$0")
-
-    $(basename -- "$0") -o .
-
-    $(basename -- "$0") -o /tmp"
-
-# parse options
-while getopts ':ho:' option; do
-  case "${option}" in
-    h)  show_help
-        exit 0
-        ;;
-    o)  readonly OUT_DIR="${OPTARG}"
-        ;;
-    :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
-        show_help >&2
-        exit 1
-        ;;
-   \?)  printf 'Illegal option: -%s\n\n' "${OPTARG}" >&2
-        show_help >&2
-        exit 1
-        ;;
-  esac
-done
-
 ensure_dependencies.sh git mksquashfs || exit "$?"
 
-# default output directory
-[ -z "${OUT_DIR}" ] && readonly OUT_DIR="${WORK_DIR}"
+if [ -z "$1" ]; then
+  # default output directory
+  readonly OUT_DIR="${WORK_DIR}"
+else
+  readonly OUT_DIR="$1"
+fi
 
 # base directory of extension
 readonly EXT_DIR="${TMP_DIR}/disk-burnin"

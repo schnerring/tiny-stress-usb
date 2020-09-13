@@ -2,10 +2,6 @@
 # Commonly shared constants and functions.
 # WARNING: this script is only to be sourced, not executed!
 
-################################################################################
-# CONSTANTS
-################################################################################
-
 # common directories
 readonly SCRIPT_DIR="$(dirname -- "$0")"; export SCRIPT_DIR
 readonly WORK_DIR="$(pwd)";               export WORK_DIR
@@ -19,10 +15,6 @@ readonly FS_LABEL_HOME=tiny_stress_home;  export FS_LABEL_HOME
 
 # include script and utilities directory in PATH
 PATH="${SCRIPT_DIR}:${SCRIPT_DIR}/util:${PATH}"
-
-################################################################################
-# FUNCTIONS
-################################################################################
 
 ##################################################
 # Log informational message.
