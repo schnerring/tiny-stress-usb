@@ -1,6 +1,6 @@
 #!/bin/sh
 # Commonly shared constants and functions.
-# WARNING: this script is only to be sourced, not executed!
+# WARNING: only source, don't execute!
 
 # common directories
 readonly SCRIPT_DIR="$(dirname -- "$0")"; export SCRIPT_DIR
@@ -33,6 +33,19 @@ log_info()
   log_status="$?"
   [ "${log_status}" = 0 ] && return 0
 
+  exit 1
+}
+
+##################################################
+# Log error message and exit with code 1.
+# Arguments:
+#   Message to log.
+# Outputs:
+#   Redirect log_info output to stderr.
+##################################################
+log_error()
+{
+  log_info "$1" >&2
   exit 1
 }
 

@@ -36,7 +36,7 @@ while getopts ':hcy' option; do
         ;;
     c)  readonly CLEAN_UP=true
         ;;
-    y)  readonly AUTO_CONFIRM=true
+    y)  readonly AUTO_CONFIRM="-y"
         ;;
     :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
         show_help >&2
@@ -56,153 +56,40 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-ensure_dependencies.sh mount  || exit "$?"
 ensure_root_privileges.sh     || exit "$?"
 
-DEVICE="$1"
+readonly DEVICE="$1"
 
-# TODO duplicate
-# prepend /dev/ if necessary
-if ! printf '%s' "${DEVICE}" | grep -q "/dev/\w*"; then
-  DEVICE="/dev/${DEVICE}"
-fi
-readonly DEVICE
+format_usb.sh "${AUTO_CONFIRM}" "${DEVICE}" \
+  || log_error "Format failed: ${DEVICE}"
 
-# common directories
-readonly MNT_DIR="${TMP_DIR}/mnt"
-readonly DOWNLOAD_DIR="${TMP_DIR}/downloads"
+mkdir -p -- "${TMP_DIR}/mnt/efi" \
+  || log_error "Creating directory failed: ${TMP_DIR}/mnt/efi"
 
-# partitions
-readonly PART_EFI="${DEVICE}1" # e.g. /dev/sdc1
-readonly PART_ROOT="${DEVICE}2" # e.g. /dev/sdc2
+mount -- "${DEVICE}1" "${TMP_DIR}/mnt/efi" \
+  || log_error "Mount failed: ${DEVICE}1 on ${TMP_DIR}/mnt/efi"
 
-# mount points
-readonly MNT_EFI="${MNT_DIR}${PART_EFI}" # e.g. ./tmp/mnt/dev/sdc1
-readonly MNT_ROOT="${MNT_DIR}${PART_ROOT}" # e.g. ./tmp/mnt/dev/sdc2
+install_grub.sh "${TMP_DIR}/mnt/efi" \
+  || log_error "Installing GRUB failed"
 
-########################################
-# Show runtime information.
-# Globals:
-#   DEVICE
-#   BUS_CONNECTION
-#   WORK_DIR
-#   TMP_DIR
-#   MNT_DIR
-#   DOWNLOAD_DIR
-#   PART_EFI
-#   PART_ROOT
-#   MNT_EFI
-#   MNT_ROOT
-#   AUTO_CONFIRM
-#   CLEAN_UP
-# Arguments:
-#   None
-########################################
-show_runtime_info() {
-  log_header "Common Directories"
-  log_info "Working:        ${WORK_DIR}"
-  log_info "Temporary:      ${TMP_DIR}"
-  log_info "Mount Points:   ${MNT_DIR}"
-  log_info "Downloads:      ${DOWNLOAD_DIR}"
+tc_download.sh "${TMP_DIR}/downloads" \
+  || log_error "Downloading Tiny Core Linux failed"
 
-  log_header "EFI Partition"
-  log_info "Partition:      ${PART_EFI}"
-  log_info "Mount Point:    ${MNT_EFI}"
+tc_create_disk_burnin_extension.sh "${TMP_DIR}/downloads/tce/optional" \
+  || log_error "Creating Tiny Core extension failed: disk-burnin"
+printf 'disk-burnin.tcz\n' >> "${TMP_DIR}/downloads/tce/onboot.lst"
 
-  log_header "Root Partition"
-  log_info "Partition:      ${PART_ROOT}"
-  log_info "Mount Point:    ${MNT_ROOT}"
+mkdir -p -- "${TMP_DIR}/mnt/root" \
+  || log_error "Creating directory failed: ${TMP_DIR}/mnt/root"
 
-  log_header "Other"
-  log_info "Auto-Confirm:   ${AUTO_CONFIRM}"
-  log_info "Clean Up:       ${CLEAN_UP}"
-}
+mount -- "${DEVICE}2" "${TMP_DIR}/mnt/root" \
+  || log_error "Mount failed: ${DEVICE}2 on ${TMP_DIR}/mnt/root"
 
-########################################
-# Ensures directories exist.
-# Globals:
-#   TMP_DIR
-#   MNT_DIR
-#   DOWNLOAD_DIR
-# Arguments:
-#   None
-########################################
-ensure_directories() {
-  log_header "Creating Directories"
+cp -r -- "${TMP_DIR}/downloads/boot" "${TMP_DIR}/mnt/root" \
+  || log_error "Copy failed: ${TMP_DIR}/downloads/boot to ${TMP_DIR}/mnt/root"
 
-  mkdir -p -- "${MNT_DIR}"
-  mkdir -p -- "${DOWNLOAD_DIR}"
-  mkdir -p -- "${MNT_EFI}"
-  mkdir -p -- "${MNT_ROOT}"
+cp -r -- "${TMP_DIR}/downloads/tce" "${TMP_DIR}/mnt/root" \
+  || log_error "Copy failed: ${TMP_DIR}/downloads/tce to ${TMP_DIR}/mnt/root"
 
-  log_info "Done."
-}
-
-########################################
-# Mount file systems.
-# Globals:
-#   PART_EFI
-#   PART_ROOT
-#   MNT_EFI
-#   MNT_ROOT
-# Arguments:
-#   None
-########################################
-mount_file_systems() {
-  log_header "Mounting File Systems"
-  mount "${PART_EFI}" "${MNT_EFI}"
-  mount "${PART_ROOT}" "${MNT_ROOT}"
-  log_info "Done."
-}
-
-########################################
-# Install downloaded Tiny Core Linux on root partition.
-# Globals:
-#   DOWNLOAD_DIR
-#   MNT_ROOT
-# Arguments:
-#   None
-########################################
-install_tiny_core() {
-  log_header "Installing Tiny Core Linux"
-  cp --recursive -- "${DOWNLOAD_DIR}/boot" "${MNT_ROOT}"
-  cp --recursive -- "${DOWNLOAD_DIR}/tce" "${MNT_ROOT}"
-  log_info "Done."
-}
-
-########################################
-# Unmount the device and delete temporary directory.
-# Globals:
-#   CLEAN_UP
-# Arguments:
-#   None
-########################################
-teardown() {
-  [ "${CLEAN_UP}" != true ] && exit 0
-  log_header "Cleaning Up"
-  unmount_partitions # TODO unknown
-}
-
-########################################
-# Main function of script.
-# Arguments:
-#   None
-########################################
-main() {
-  show_runtime_info
-  ensure_directories
-  if [ "${AUTO_CONFIRM}" = true ]; then
-    format_usb.sh -y "${DEVICE}" || exit 1
-  else
-    format_usb.sh "${DEVICE}" || exit 1
-  fi
-  mount_file_systems
-  tc_download.sh "${DOWNLOAD_DIR}" || exit 1
-  tc_create_disk_burnin_extension.sh "${DOWNLOAD_DIR}/tce/optional" || exit 1
-  printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
-  install_tiny_core
-  install_grub.sh "${MNT_EFI}" || exit 1
-  #teardown # TODO
-}
-
-main "$@"
+#[ "${CLEAN_UP}" != true ] && exit 0
+#unmount_partitions # TODO unknown

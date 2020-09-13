@@ -60,13 +60,7 @@ fi
 ensure_dependencies.sh lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount || exit "$?"
 ensure_root_privileges.sh || exit "$?"
 
-DEVICE="$1"
-
-# prepend /dev/ if necessary
-if ! printf '%s' "${DEVICE}" | grep -q "/dev/\w*"; then
-  DEVICE="/dev/${DEVICE}"
-fi
-readonly DEVICE
+readonly DEVICE="$1"
 
 # check if USB device
 readonly BUS_CONNECTION="$(lsblk --nodeps --noheadings --output TRAN "${DEVICE}")"
@@ -170,6 +164,7 @@ create_partitions() {
     log_info "Failed" >&2
     exit 1
   fi
+  log_info "Done."
 
   log_header "Creating Home Partition"
   if ! sgdisk --new 3:0:+100M "${DEVICE}"; then
