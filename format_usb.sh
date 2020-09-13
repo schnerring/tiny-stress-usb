@@ -176,7 +176,13 @@ create_partitions() {
   log_info "Done."
 
   log_header "Creating Root Partition"
-  if ! sgdisk --new 2:0:+20M "${DEVICE}"; then
+  if ! sgdisk --new 2:0:+40M "${DEVICE}"; then
+    log_info "Failed" >&2
+    exit 1
+  fi
+
+  log_header "Creating Home Partition"
+  if ! sgdisk --new 3:0:+100M "${DEVICE}"; then
     log_info "Failed" >&2
     exit 1
   fi
@@ -202,6 +208,13 @@ create_file_systems() {
 
   log_header "Creating ext2 File System On Root Partition"
   if ! mkfs.ext2 -F "${DEVICE}2" -L "${FS_LABEL_ROOT}"; then # e.g. /dev/sdc2
+    log_info "Failed" >&2
+    exit 1
+  fi
+  log_info "Done."
+
+  log_header "Creating ext2 File System On Home Partition"
+  if ! mkfs.ext2 -F "${DEVICE}3" -L "${FS_LABEL_HOME}"; then # e.g. /dev/sdc3
     log_info "Failed" >&2
     exit 1
   fi

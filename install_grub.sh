@@ -72,7 +72,7 @@ terminal_output gfxterm
 search --no-floppy --label --set=root ${FS_LABEL_ROOT}
 
 menuentry \"Tiny Stress USB\" {
-    linux /boot/vmlinuz64 quiet text waitusb=5 tce=LABEL=\"${FS_LABEL_ROOT}/tce\"
+    linux /boot/vmlinuz64 quiet text waitusb=5 tce=LABEL=${FS_LABEL_ROOT}/tce home=LABEL=${FS_LABEL_HOME}
     initrd /boot/corepure64.gz
 }"
 
