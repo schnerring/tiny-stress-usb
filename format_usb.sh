@@ -1,6 +1,73 @@
 #!/bin/sh
 
-. "util/logging.sh"
+. "util/common.sh"
+
+readonly USAGE=\
+"NAME
+    $(basename -- "$0") -- format USB device for Tiny Core Linux
+
+SYNOPSIS
+    $(basename -- "$0") [-h] [-y] <device>
+
+DESCRIPTION
+    Format USB device, so Tiny Core Linux can be installed. Creates an EFI and
+    root partition.
+
+OPTIONS
+    -h              Show help text
+    -y              Automatic yes to prompts
+    <device>        USB device to use (/dev/ may be omitted)
+
+EXAMPLES
+    $(basename -- "$0")
+
+    $(basename -- "$0") sdc
+
+    $(basename -- "$0") /dev/sdd"
+
+########################################
+# Display help text.
+# Globals:
+#   USAGE
+# Arguments:
+#   None
+# Outputs:
+#   Write help text to stdout.
+########################################
+show_help() {
+  printf '%s\n' "${USAGE}"
+}
+
+# parse options
+while getopts ':hy' option; do
+  case "${option}" in
+    h)  show_help
+        exit
+        ;;
+    y)  readonly AUTO_CONFIRM=true
+        ;;
+    :)  printf 'Missing argument for: -%s\n\n' "${OPTARG}" >&2
+        show_help >&2
+        exit 1
+        ;;
+   \?)  printf 'Illegal option: -%s\n\n' "${OPTARG}" >&2
+        show_help >&2
+        exit 1
+        ;;
+  esac
+done
+shift $(( OPTIND - 1 ))
+
+if [ -z "$1" ]; then
+  printf 'Missing option: <device>\n\n' >&2
+  show_help >&2
+  exit 1
+fi
+
+ensure_dependencies.sh lsblk mkfs.fat mkfs.ext2 partprobe sgdisk umount \
+  || exit "$?"
+
+DEVICE="$1"
 
 # prepend /dev/ if necessary
 if ! printf '%s' "${DEVICE}" | grep -q "/dev/\w*"; then
@@ -144,9 +211,12 @@ create_file_systems() {
 # Arguments:
 #   None
 ########################################
-format_usb() {
+main() {
   confirmation_prompt
   wipe_partitions
   create_partitions
   create_file_systems
+  return 0
 }
+
+main "$@"

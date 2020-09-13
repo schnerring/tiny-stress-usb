@@ -1,10 +1,6 @@
 #!/bin/sh
 
-# include script dir in path
-readonly SCRIPT_DIR="$(dirname -- "$0")"
-PATH="${SCRIPT_DIR}:${PATH}"
-
-. "util/logging.sh"
+. "util/common.sh"
 
 readonly USAGE=\
 "NAME
@@ -63,8 +59,6 @@ while getopts ':ho:' option; do
 done
 
 ensure_dependencies.sh git mksquashfs || exit "$?"
-
-readonly WORK_DIR="$(pwd)"
 
 # output directory
 [ -z "${OUT_DIR}" ] && OUT_DIR="${WORK_DIR}"

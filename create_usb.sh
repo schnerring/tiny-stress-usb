@@ -1,10 +1,13 @@
 #!/bin/sh
+
+. "util/common.sh"
+
 readonly USAGE=\
 "NAME
     $(basename -- "$0") -- create tiny, bootable stress test USB
 
 SYNOPSIS
-    $(basename -- "$0") [-h] [-l <directory>] <device>
+    $(basename -- "$0") [-h] [-c] [-y] <device>
 
 DESCRIPTION
     Tool to create a bootable USB device, including a minimal Tiny Core Linux
@@ -16,16 +19,15 @@ OPTIONS
     -h                Show help text
     -c                Clean up after the program succeeds. Delete temporary
                       directory and unmount the device.
-    -l <directory>    Write log files to <directory> (default: $(pwd))
     -y                Automatic yes to prompts
     <device>          USB device to use (/dev/ may be omitted)
 
 EXAMPLES
     $(basename -- "$0") sda
 
-    $(basename -- "$0") -l . /dev/sdb
+    $(basename -- "$0") -y /dev/sdb
 
-    $(basename -- "$0") -l ~/logs sdc"
+    $(basename -- "$0") -cy sdc"
 
 ########################################
 # Show help text.
@@ -41,14 +43,12 @@ show_help() {
 }
 
 # parse options
-while getopts ':hcl:y' option; do
+while getopts ':hcy' option; do
   case "${option}" in
     h)  show_help
         exit
         ;;
     c)  readonly CLEAN_UP=true
-        ;;
-    l)  LOG_DIR="${OPTARG}"
         ;;
     y)  readonly AUTO_CONFIRM=true
         ;;
@@ -70,25 +70,7 @@ if [ -z "$1" ]; then
   exit 2
 fi
 
-# include script dir in path
-readonly SCRIPT_DIR="$(dirname -- "$0")"
-PATH="${SCRIPT_DIR}:${PATH}"
-
-# check required software packages
-readonly DEPENDENCIES="
-blkid
-grub-install
-lsblk
-md5sum
-mkfs.fat
-mkfs.ext2
-mount
-partprobe
-sed
-wget"
-
-# shellcheck disable=SC2086
-ensure_dependencies.sh ${DEPENDENCIES} || exit "$?"
+ensure_dependencies.sh blkid grub-install md5sum mount sed wget || exit "$?"
 ensure_root_privileges.sh || exit "$?"
 
 ################################################################################
@@ -97,11 +79,14 @@ ensure_root_privileges.sh || exit "$?"
 
 DEVICE="$1"
 
-. "util/logging.sh"
-. "format-usb.sh"
+# TODO duplicate
+# prepend /dev/ if necessary
+if ! printf '%s' "${DEVICE}" | grep -q "/dev/\w*"; then
+  DEVICE="/dev/${DEVICE}"
+fi
+readonly DEVICE
 
 # common directories
-readonly WORK_DIR="$(pwd)"
 readonly TMP_DIR="${WORK_DIR}/tmp"
 readonly MNT_DIR="${TMP_DIR}/mnt"
 readonly DOWNLOAD_DIR="${TMP_DIR}/downloads"
@@ -149,7 +134,6 @@ readonly TC_EXTENSIONS="e2fsprogs kmaps screen smartmontools systester-cli"
 show_runtime_info() {
   log_header "Device Information"
   log_info "Device:         ${DEVICE}"
-  log_info "Bus Connection: ${BUS_CONNECTION}"
 
   log_header "Common Directories"
   log_info "Working:        ${WORK_DIR}"
@@ -403,7 +387,7 @@ install_grub() {
 teardown() {
   [ "${CLEAN_UP}" != true ] && exit
   log_header "Cleaning Up"
-  unmount_partitions
+  unmount_partitions # TODO unknown
   delete_temporary_directory
 }
 
@@ -415,7 +399,11 @@ teardown() {
 main() {
   show_runtime_info
   ensure_directories
-  format_usb
+  if [ "${AUTO_CONFIRM}" = true ]; then
+    format_usb.sh -y "${DEVICE}"
+  else
+    format_usb.sh "${DEVICE}"
+  fi
   mount_file_systems
   download_tiny_core
   download_tiny_core_extensions
@@ -423,7 +411,7 @@ main() {
   printf 'disk-burnin.tcz\n' >> "${DOWNLOAD_DIR}/tce/onboot.lst"
   install_tiny_core
   install_grub
-  teardown
+  #teardown # TODO
 }
 
 # entrypoint

@@ -31,6 +31,7 @@ Most inspiring were the following resources, found in the iXsystems Community's 
   * `partprobe` to re-read partition table
   * `sed` to search and replace in files
   * `sgdisk` for partitioning
+  * `umount` to unmount partitions
   * `wget` to download software
 
 ## Bundled Tiny Core Extensions

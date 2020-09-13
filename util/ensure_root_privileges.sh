@@ -4,6 +4,8 @@
 # Exit with code 0 if running as root, code 1 otherwise.
 # Arguments:
 #   None
+# Outputs:
+#   Write error to stderr.
 ########################################
 main() {
   [ "$(id -u)" -eq 0 ] && exit 0
